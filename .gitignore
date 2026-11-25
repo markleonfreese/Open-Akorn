@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.venv/
+*.apk
+*.dex
+*.smali
+*.pcap
+*.pcapng
+*.btsnoop
+captures/
+decompiled/
+.env
+*.csv

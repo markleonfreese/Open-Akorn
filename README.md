@@ -1,7 +1,24 @@
 # Open-Akorn
 
-Independent, local-first companion for the Char-Griller AKORN Auto-Kamado. Keep the factory controller in charge of the fire. No cloud account or hardware modification is intended.
+Experimental, local-first companion for the Char-Griller AKORN Auto-Kamado. Preserve the original controller, sensors and safety mechanisms. No account, cloud service or hardware modification is required by this POC.
 
-**Research POC, not a safety controller.** Do not use experimental software to operate an unattended fire. Device-specific hardware acceptance is outstanding.
+## Run the simulator (Python 3.11+; standard library only)
+```sh
+python monitor.py --demo
+```
+Open http://127.0.0.1:8080. The demo uses a static synthetic sample, not a physical grill. The browser presents Celsius and the JSON endpoint exposes both Celsius and Fahrenheit.
 
-A surviving MIT-licensed community implementation supports Auto AKORN: https://github.com/grzbiet/cg980app. Its protocol and code provide a strong starting point; hardware claims are community-reported until reproduced. The initial implementation will be read-only, with Celsius display and Home Assistant as subsequent work.
+## Cold-grill hardware experiment
+Follow [the bench procedure](docs/bench.md). For your own already-provisioned device, close the original app, use the known private LAN IP, and run:
+```sh
+python monitor.py --ip 192.168.1.50 --frame-size 20
+```
+Replace the example address with the grill's real address. Do not use a guessed frame size on another model. Stop if readings disagree with the panel. Never port-forward the grill or dashboard.
+
+```sh
+python -m unittest discover -s tests -v
+```
+
+See [research and source provenance](docs/research.md), [roadmap](docs/roadmap.md) and [agent instructions](AGENTS.md). A surviving community implementation, [chargrillerd](https://github.com/grzbiet/cg980app/tree/2236faf93f3d2b0663764a0379131d97aef77c2e), already reports Auto AKORN support; use its documented protocol as evidence rather than reinventing it.
+
+**Not a safety controller.** No command API, remote fan control, provisioning, unattended fire operation or automatic deployment in this POC. Physical compatibility is unverified. No APK or decompiled source is included.
