@@ -1,5 +1,6 @@
 """Experimental read-only local monitor. No grill command path."""
 import argparse
+import asyncio
 import ipaddress
 import json
 import socket
@@ -9,6 +10,8 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 FRAME = bytes.fromhex('006900e110000045006003e81000100010321100')
+BLE_STATUS_UUID = '0000bbb1-0000-1000-8000-00805f9b34fb'
+BLE_STATUS_HEADER = bytes.fromhex('00191400')
 
 
 def decode(frame, size):
@@ -43,6 +46,13 @@ def decode(frame, size):
     return dict(pit=probe(0), probe1=probe(6), probe2=probe(10),
                 alarm=frame[4] == 0, fan_mode=mode, fan_percent=speed,
                 raw_hex=frame.hex(), frame_size=size)
+
+
+def decode_ble_status_notification(payload):
+    """Decode the documented 20-byte Auto-Akorn status notification only."""
+    if len(payload) != 24 or payload[:4] != BLE_STATUS_HEADER:
+        raise ValueError('unexpected BLE status notification')
+    return decode(payload[4:], 20)
 
 
 def read_frames(stream, size):
@@ -84,10 +94,10 @@ class Snapshot:
             return dict(state=state, age_seconds=age, reading=self.value if state == 'live' else None)
 
 
-def receive(ip, size, state):
-    while True:
+def receive(ip, size, state, stop_event=None, retry_delay=5, port=3333):
+    while stop_event is None or not stop_event.is_set():
         try:
-            with socket.create_connection((ip, 3333), timeout=5) as sock:
+            with socket.create_connection((ip, port), timeout=5) as sock:
                 with sock.makefile('rb') as stream:
                     for frame in read_frames(stream, size):
                         state.publish(decode(frame, size))
@@ -95,7 +105,52 @@ def receive(ip, size, state):
             print('Telemetry unavailable:', exc, flush=True)
         finally:
             state.disconnect()
-        time.sleep(5)
+        if stop_event is None:
+            time.sleep(retry_delay)
+        elif stop_event.wait(retry_delay):
+            return
+
+
+async def receive_ble(device_name, state, bleak_api=None, scan_timeout=10):
+    """Subscribe to one explicitly named Auto-Akorn status characteristic."""
+    if bleak_api is None:
+        try:
+            import bleak as bleak_api
+        except ImportError as exc:
+            raise RuntimeError("BLE monitoring requires the optional 'bleak' package") from exc
+
+    try:
+        device = await bleak_api.BleakScanner.find_device_by_name(
+            device_name, timeout=scan_timeout,
+        )
+        if device is None:
+            raise OSError('BLE device not found')
+
+        disconnected = asyncio.Event()
+        async with bleak_api.BleakClient(
+            device, disconnected_callback=lambda _: disconnected.set(),
+        ) as client:
+            def on_notification(_sender, data):
+                try:
+                    value = decode_ble_status_notification(bytes(data))
+                except ValueError as exc:
+                    print('Ignoring invalid BLE status:', exc, flush=True)
+                    return
+                state.publish(value)
+
+            await client.start_notify(BLE_STATUS_UUID, on_notification)
+            await disconnected.wait()
+    finally:
+        state.disconnect()
+
+
+def receive_ble_worker(device_name, state):
+    try:
+        asyncio.run(receive_ble(device_name, state))
+    except Exception:
+        # Avoid printing BLE library errors that can contain local device IDs.
+        print('BLE telemetry unavailable; check device visibility and Bluetooth permissions.', flush=True)
+        state.disconnect()
 
 
 PAGE = '''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Open-Akorn</title><style>body{font:18px system-ui;max-width:760px;margin:auto;padding:24px;background:#faf9f6;color:#222}section{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}article{background:white;border:1px solid #ddd;border-radius:12px;padding:18px}strong{font-size:34px;display:block}#status{font-weight:bold}small{display:block;margin-top:20px}</style><h1>Open-Akorn</h1><p id="status">Waiting for telemetry</p><section id="cards"></section><p id="fan"></p><small>Experimental monitoring only. Use the factory controller and supervise the grill. No controls are enabled.</small><script>
@@ -134,19 +189,27 @@ def main():
     modes = parser.add_mutually_exclusive_group(required=True)
     modes.add_argument('--demo', action='store_true')
     modes.add_argument('--ip', type=ipaddress.IPv4Address)
+    modes.add_argument('--ble-name', help='exact advertised Auto-Akorn name (Akorn-...)')
     parser.add_argument('--frame-size', type=int, choices=(16, 20), default=20)
     parser.add_argument('--port', type=int, default=8080)
     args = parser.parse_args()
     if args.ip and not any(args.ip in ipaddress.ip_network(n) for n in ('10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16')):
         parser.error('use an explicit private LAN address for your own grill')
+    if args.ble_name and (not args.ble_name.startswith('Akorn-') or args.frame_size != 20):
+        parser.error('BLE status monitoring requires an exact Akorn-* name and 20-byte frames')
     state = Snapshot()
     httpd = server(state, args.demo, args.port)
     def simulate():
         while True:
             state.publish(decode(FRAME[:args.frame_size], args.frame_size))
             time.sleep(1)
-    thread = threading.Thread(target=simulate if args.demo else receive,
-                              args=() if args.demo else (str(args.ip), args.frame_size, state), daemon=True)
+    if args.demo:
+        target, worker_args = simulate, ()
+    elif args.ble_name:
+        target, worker_args = receive_ble_worker, (args.ble_name, state)
+    else:
+        target, worker_args = receive, (str(args.ip), args.frame_size, state)
+    thread = threading.Thread(target=target, args=worker_args, daemon=True)
     thread.start()
     print(f'Open http://127.0.0.1:{httpd.server_port}', flush=True)
     try:
