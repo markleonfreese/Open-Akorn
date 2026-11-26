@@ -7,7 +7,9 @@ import socket
 import struct
 import threading
 import time
+from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import urlsplit
 
 FRAME = bytes.fromhex('006900e110000045006003e81000100010321100')
 BLE_STATUS_UUID = '0000bbb1-0000-1000-8000-00805f9b34fb'
@@ -153,27 +155,60 @@ def receive_ble_worker(device_name, state):
         state.disconnect()
 
 
-PAGE = '''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Open-Akorn</title><style>body{font:18px system-ui;max-width:760px;margin:auto;padding:24px;background:#faf9f6;color:#222}section{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}article{background:white;border:1px solid #ddd;border-radius:12px;padding:18px}strong{font-size:34px;display:block}#status{font-weight:bold}small{display:block;margin-top:20px}</style><h1>Open-Akorn</h1><p id="status">Waiting for telemetry</p><section id="cards"></section><p id="fan"></p><small>Experimental monitoring only. Use the factory controller and supervise the grill. No controls are enabled.</small><script>
-const status=document.querySelector('#status'), cards=document.querySelector('#cards'), fan=document.querySelector('#fan');
-function render(s){status.textContent=(s.demo?'SIMULATION | ':'UNVERIFIED HARDWARE | ')+s.state;cards.replaceChildren();fan.textContent='';if(!s.reading)return;let r=s.reading;for(let [key,name] of [['pit','Pit'],['probe1','Meat 1'],['probe2','Meat 2']]){let p=r[key],a=document.createElement('article'),v=document.createElement('strong');a.append(name);v.textContent=p.current_c===null?'Not connected':p.current_c.toFixed(1)+' °C';a.append(v,'Target: '+(p.target_c===null?'Not set':p.target_c.toFixed(1)+' °C'));cards.append(a)}fan.textContent='Fan: '+(r.fan_mode||'Unknown')+(r.fan_percent===null?'':' '+r.fan_percent+'%')+' | Alarm: '+(r.alarm?'ACTIVE':'Not reported active')}
-async function poll(){try{let r=await fetch('/api/status',{cache:'no-store',signal:AbortSignal.timeout(3000)});if(!r.ok)throw Error();render(await r.json())}catch{render({state:'unavailable'})}setTimeout(poll,1000)}poll();</script></html>'''
+PWA_ROOT = Path(__file__).resolve().parent / 'pwa'
+PWA_ASSETS = {
+    '/': ('index.html', 'text/html; charset=utf-8'),
+    '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
+    '/styles.css': ('styles.css', 'text/css; charset=utf-8'),
+    '/manifest.webmanifest': ('manifest.webmanifest', 'application/manifest+json'),
+    '/service-worker.js': ('service-worker.js', 'text/javascript; charset=utf-8'),
+    '/icon.svg': ('icon.svg', 'image/svg+xml'),
+    '/icon-192.png': ('icon-192.png', 'image/png'),
+    '/icon-512.png': ('icon-512.png', 'image/png'),
+}
 
 
-def server(state, demo, port):
+def api_status(state, demo, source=None):
+    """Return the stable, unit-explicit status contract; never expose raw frames."""
+    snapshot = state.get()
+    reading = snapshot.get('reading')
+    if reading is not None:
+        reading = {key: reading[key] for key in
+                   ('pit', 'probe1', 'probe2', 'alarm', 'fan_mode', 'fan_percent')}
+    return {
+        'schema_version': 1,
+        'model': 'akorn-auto',
+        'source': source or ('demo' if demo else 'tcp'),
+        'demo': bool(demo),
+        **snapshot,
+        'reading': reading,
+    }
+
+
+def server(state, demo, port, source=None):
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
-            if self.path == '/api/status':
-                body = json.dumps(dict(state.get(), demo=demo)).encode()
+            path = urlsplit(self.path).path
+            if path == '/api/status':
+                body = json.dumps(api_status(state, demo, source)).encode()
                 kind = 'application/json'
-            elif self.path == '/':
-                body = PAGE.encode()
-                kind = 'text/html; charset=utf-8'
+                cache = 'no-store'
+            elif path in PWA_ASSETS:
+                file_name, kind = PWA_ASSETS[path]
+                try:
+                    body = (PWA_ROOT / file_name).read_bytes()
+                except OSError:
+                    self.send_error(404)
+                    return
+                cache = 'no-cache'
             else:
                 self.send_error(404)
                 return
             self.send_response(200)
             self.send_header('Content-Type', kind)
-            self.send_header('Cache-Control', 'no-store')
+            self.send_header('Cache-Control', cache)
+            self.send_header('X-Content-Type-Options', 'nosniff')
+            self.send_header('Content-Security-Policy', "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'")
             self.send_header('Content-Length', str(len(body)))
             self.end_headers()
             self.wfile.write(body)
@@ -198,7 +233,8 @@ def main():
     if args.ble_name and (not args.ble_name.startswith('Akorn-') or args.frame_size != 20):
         parser.error('BLE status monitoring requires an exact Akorn-* name and 20-byte frames')
     state = Snapshot()
-    httpd = server(state, args.demo, args.port)
+    source = 'demo' if args.demo else 'ble' if args.ble_name else 'tcp'
+    httpd = server(state, args.demo, args.port, source=source)
     def simulate():
         while True:
             state.publish(decode(FRAME[:args.frame_size], args.frame_size))

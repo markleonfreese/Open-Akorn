@@ -55,6 +55,9 @@ class ReadOnlyHttpTests(unittest.TestCase):
             with urlopen(base + '/api/status', timeout=3) as response:
                 payload = json.load(response)
                 self.assertTrue(payload['demo'])
+                self.assertEqual(payload['schema_version'], 1)
+                self.assertEqual(payload['source'], 'demo')
+                self.assertNotIn('raw_hex', payload['reading'])
                 self.assertEqual(response.headers['Cache-Control'], 'no-store')
             with self.assertRaises(HTTPError) as error:
                 urlopen(Request(base + '/api/command', data=b'{}',

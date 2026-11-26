@@ -1,6 +1,10 @@
 __pycache__/
 *.py[cod]
 .venv/
+**/.gradle/
+**/build/
+**/.kotlin/
+local.properties
 *.apk
 *.dex
 *.smali

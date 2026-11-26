@@ -4,9 +4,24 @@ Experimental, local-first companion for the Char-Griller AKORN Auto-Kamado. Pres
 
 ## Run the simulator (Python 3.11+; standard library only)
 ```sh
-python monitor.py --demo
+python3 monitor.py --demo
 ```
-Open http://127.0.0.1:8080. The demo uses a static synthetic sample, not a physical grill. The browser presents Celsius and the JSON endpoint exposes both Celsius and Fahrenheit.
+Open http://127.0.0.1:8080 on the same computer. The demo uses a shared synthetic fixture, not a physical grill. The responsive page is an installable PWA on supported browsers. Its service worker caches only the app shell; current telemetry always comes from the local gateway and disappears when the gateway is offline.
+
+## Android phone and tablet preview
+
+The native Kotlin app supports Android 10/API 29 and newer. It has a shared-fixture demo plus explicit read-only TCP and Bluetooth connections. It does not embed Python, use a WebView, scan networks, run in the background, or send controller commands. TCP accepts a manually entered private IPv4 address. BLE requires the exact observed `Akorn-*` name and subscribes to status notifications only.
+
+Install a JDK 17 or newer and Android SDK Platform 36, and accept the SDK license in the SDK Manager. Build and run the Android unit tests with:
+
+```sh
+cd android
+./gradlew testDebugUnitTest assembleDebug
+```
+
+The debug-signed APK is written to `android/app/build/outputs/apk/debug/app-debug.apk`. It is intended for local testing, not release distribution. The app disconnects when it is backgrounded; persistent alerts are deferred until physical compatibility is established.
+
+The PWA runs on loopback and is available only on the computer running the gateway. Phone/tablet access to a gateway on another device requires a separately approved authenticated HTTPS setup; it is not enabled.
 
 ## Optional BLE status monitor
 The separately sourced BLE path needs the optional [Bleak](https://bleak.readthedocs.io/) package. On the same computer, install it with `python -m pip install bleak`, then select the exact advertised name observed on your own already-provisioned controller:
@@ -27,7 +42,9 @@ Replace the example address with the grill's real address. Do not use a guessed 
 The local TCP adapter retries after a disconnect. Its loopback simulator test exercises fragmented frames, coalesced frames and a reconnect; this is synthetic transport evidence, not a live-device test.
 
 ```sh
-python -m unittest discover -s tests -v
+python3 -m unittest discover -s tests -v
+node --test tests/pwa-sw.test.mjs
+(cd android && ./gradlew testDebugUnitTest assembleDebug)
 ```
 
 See [research and source provenance](docs/research.md), [roadmap](docs/roadmap.md) and [agent instructions](AGENTS.md). A surviving community implementation, [chargrillerd](https://github.com/grzbiet/cg980app/tree/2236faf93f3d2b0663764a0379131d97aef77c2e), already reports Auto AKORN support; use its documented protocol as evidence rather than reinventing it.

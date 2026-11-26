@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#244a35">
+  <meta name="description" content="Private, read-only local monitoring for the Char-Griller AKORN Auto-Kamado.">
+  <title>Open-Akorn</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <img src="/icon.svg" width="44" height="44" alt="" aria-hidden="true">
+        <div>
+          <p class="eyebrow">LOCAL GRILL MONITOR</p>
+          <h1>Open-Akorn</h1>
+        </div>
+      </div>
+      <button id="installButton" class="install-button" type="button" hidden>Install app</button>
+    </header>
+
+    <section class="connection" aria-live="polite">
+      <span id="stateDot" class="state-dot" aria-hidden="true"></span>
+      <div class="connection-copy">
+        <strong id="statusText">Waiting for local gateway</strong>
+        <span id="detailText">Start the Open-Akorn monitor on the same computer.</span>
+      </div>
+      <span id="ageText" class="age">—</span>
+    </section>
+
+    <div id="demoBanner" class="demo-banner" hidden>SIMULATION — these values are a fixture, not a grill.</div>
+
+    <section class="pit-panel" aria-labelledby="pitLabel">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">COOKING CHAMBER</p>
+          <h2 id="pitLabel">Pit temperature</h2>
+        </div>
+        <span class="reported-pill">Reported</span>
+      </div>
+      <div class="pit-reading">
+        <strong id="pitCurrent">—</strong>
+        <span>°C</span>
+      </div>
+      <div class="target-line">Target <strong id="pitTarget">— °C</strong></div>
+    </section>
+
+    <section class="probe-grid" aria-label="Meat probes">
+      <article class="probe-card">
+        <p class="eyebrow">MEAT PROBE 1</p>
+        <strong id="probe1Current" class="probe-reading">—</strong>
+        <span class="unit">°C</span>
+        <p class="target-line">Target <strong id="probe1Target">— °C</strong></p>
+      </article>
+      <article class="probe-card">
+        <p class="eyebrow">MEAT PROBE 2</p>
+        <strong id="probe2Current" class="probe-reading">—</strong>
+        <span class="unit">°C</span>
+        <p class="target-line">Target <strong id="probe2Target">— °C</strong></p>
+      </article>
+    </section>
+
+    <section class="reported-status" aria-label="Reported controller status">
+      <div>
+        <span class="status-label">Fan mode</span>
+        <strong id="fanStatus">Unknown</strong>
+      </div>
+      <div>
+        <span class="status-label">Alarm</span>
+        <strong id="alarmStatus">Unknown</strong>
+      </div>
+    </section>
+
+    <aside class="safety-note">
+      <strong>Monitoring only</strong>
+      <p>The factory controller remains responsible for temperature regulation and safety. Do not use this page to make safety decisions.</p>
+    </aside>
+    <footer>Local gateway only · no account or cloud · live status is never cached</footer>
+  </main>
+  <script src="/app.js" defer></script>
+</body>
+</html>

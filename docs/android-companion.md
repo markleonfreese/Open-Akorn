@@ -2,6 +2,12 @@
 
 User decision: support Dad's Android phone and repurpose his unused low-spec Lenovo tablet as a dedicated household display/control interface. Exact device models, Android versions and RAM are not confirmed; use Android 10/API 29 and 2 GB RAM as provisional design/test baseline, not verified hardware inventory. Future household IoT is an extension opportunity, not current MVP scope.
 
+## Offline prototype implementation — 26 November 2026
+
+The Android module builds a 2.7 MB debug APK using Kotlin and Android Views, with minSdk 29, compileSdk 36 and targetSdk 35. It includes shared-fixture demo, explicit private-IPv4 TCP monitoring, exact-name BLE status notifications, Celsius readings, a five-second freshness window and manual reconnect. JVM tests cover shared wire fixtures, stale/disconnected suppression, private-address restrictions and TCP fragmentation/timeouts. No Android device was attached. An emulator image was not installed because its SDK license prompt requires separate acceptance; runtime layout, Android lifecycle behavior, actual BLE/TCP compatibility and performance on the Lenovo remain unverified.
+
+The app disconnects when backgrounded. It requests only foreground Bluetooth permissions: Android 12+ uses Nearby Devices scan/connect permissions; Android 10/11 requests foreground location permission for BLE scanning. Only one device should own a direct grill connection at a time. No background service, command path, network discovery or remote access is included.
+
 ## Architecture proposal
 One native Kotlin Android APK, conventional lightweight Android Views/XML, minimal dependencies, no embedded Python runtime, WebView framework, cloud account or AI. Keep Python reference monitor and shared language-neutral protocol fixtures as diagnostic/oracle; do not rewrite working Python tools. One device owns the grill transport at a time (TCP single-client community report). First Android POC direct read-only TCP or BLE with explicit selection; no competing automatic connection. Tablet is the preferred owner when at home. Phone can take over only after tablet disconnects, or later consume an authenticated private-LAN telemetry endpoint from tablet/gateway. Never assume two independent connections work; do not implement unauthenticated LAN serving. Home Assistant or separate always-on hub can become gateway later if Android process lifecycle/reliability warrants it. Factory controller retains all safety-critical regulation.
 

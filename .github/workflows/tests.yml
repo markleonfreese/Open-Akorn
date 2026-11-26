@@ -5,6 +5,11 @@ on:
     branches: [main]
     paths:
       - '**.py'
+      - 'pwa/**'
+      - 'protocol-fixtures/**'
+      - 'tests/**'
+      - 'android/**'
+      - 'docs/status-contract.md'
       - '.github/workflows/tests.yml'
 
 permissions:
@@ -32,3 +37,20 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Compile Python
         run: python -m compileall -q monitor.py ha_mqtt.py tests
+      - name: Verify PWA cache boundaries
+        run: node --test tests/pwa-sw.test.mjs
+
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Test and package debug APK
+        working-directory: android
+        run: ./gradlew --no-daemon testDebugUnitTest assembleDebug

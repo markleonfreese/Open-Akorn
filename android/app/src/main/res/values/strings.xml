@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Open-Akorn</string>
+    <string name="safety_note">Monitoring only. The factory controller remains responsible for temperature and safety.</string>
+</resources>

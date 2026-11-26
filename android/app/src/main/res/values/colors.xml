@@ -1,0 +1,10 @@
+<resources>
+    <color name="akorn_ink">#20251F</color>
+    <color name="akorn_muted">#5A6259</color>
+    <color name="akorn_cream">#F5F2E9</color>
+    <color name="akorn_card">#FFFEFA</color>
+    <color name="akorn_green">#295A3A</color>
+    <color name="akorn_amber">#935A10</color>
+    <color name="akorn_red">#A53425</color>
+    <color name="akorn_border">#D9D7CD</color>
+</resources>

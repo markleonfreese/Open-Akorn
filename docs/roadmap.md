@@ -3,18 +3,14 @@
 ## POC
 - Recovered community fork and pinned protocol; independent APK reference analysis.
 - Read-only explicit-IP TCP adapter, synthetic sample, Celsius web dashboard and JSON telemetry. Standard library only; local browser only.
-- Tests for valid/invalid frames, sentinels, partial/coalesced TCP frames and freshness. Hardware test pending. No installable PWA yet.
+- Shared byte fixtures and unit-explicit normalized status contract consumed by Python, Kotlin and the PWA; tests cover valid/invalid frames, sentinels, partial/coalesced TCP frames and freshness.
+- Lightweight native Android demo/read-only TCP/BLE preview and localhost installable PWA. Both are simulator-tested; physical grill and target phone/tablet acceptance remain pending.
 
-## MVP
-1. Reproduce community implementation on actual AKORN cold, record device/firmware. Confirm frame size and UDP discovery; use explicit device selection.
-2. Implement BLE scan and notification monitoring using optional Bleak, then an explicitly invoked provisioning workflow after local owner approval. Wi-Fi credentials only in memory; no automatic reset/disconnect or unknown commands. Compare upstream MIT implementation, preserve notices if reused.
-3. Robust frame boundary identification, long-running reconnect/cancellation, stale and malformed frames, sanitised logs, session history/graphs, user-visible alarms with honest freshness; accessibility and mobile acceptance. Separate simulation from real device.
-4. Local authenticated LAN UI for dad, simple Celsius-first views; use private home VPN if remote access required, never raw internet exposure. Home Assistant read-only MQTT discovery/availability or a local polling integration; one gateway owns the TCP connection. No cloud dependency. Browser/PWA installability only after suitable secure-origin deployment; no external scripts.
-5. Optional, separate controlled setpoint experiment: supervised cold-only tests, known model, explicit approval, bounds in manufacturer-supported range, confirmation from subsequent telemetry rather than optimistic success; no automatic retries. Disable all unverified timer/power/fan and alarm-silence paths. Do not implement unattended fire control.
-6. ESP32 as gateway only if always-on host is inconvenient. Preserve factory controller. Hardware replacement is a separate project requiring verified electrical design and safety review.
+## Next gate
+1. Owner performs the cold-grill acceptance in `docs/bench.md` and `docs/owner-quickstart.md`; verify model, firmware, live readings, probes, stale clearing, offline operation and reconnect. Compare the Android preview on the actual phone/tablet. Any mismatch blocks live use.
+2. Based on physical results, decide whether to improve BLE reconnect or use the existing Python gateway as the single transport owner. Do not add simultaneous direct clients.
+3. Only then consider user-approved foreground monitoring, local timers/alerts, local history, authenticated private-LAN access or Home Assistant broker wiring. Preserve loopback defaults and do not retain temperatures.
+4. Keep provisioning, ESP32, target writes and all fan/power/timer/alarm commands out of this prototype. Preserve the factory controller.
 
-## Definition of done
-Local device verified on actual model, repeatable offline operation, measured disconnect recovery, explicit device status/freshness, no stale displayed temperatures, no cloud dependency, owner usability acceptance, test evidence and a documented safe operational envelope. Simulated success does not equal hardware completion.
-
-## Next bounded engineering packet
-Review the disconnected Home Assistant message adapter and its fake-publisher tests in the existing draft. Before adding a real MQTT client, select an operator-controlled local broker, receive explicit approval to use its endpoint/credentials, and verify a cold-grill device. Keep one gateway as the only TCP reader; retain discovery and availability only; never retain temperatures or add command entities. No deployment or merge without review. Physical compatibility remains unverified.
+## Prototype status
+The offline prototype is code-complete pending review and CI: Python gateway, shared fixtures, Android APK and PWA have local unit/browser smoke coverage. Physical device compatibility, owner usability, actual Android 10/11/12+ permissions, Lenovo performance and phone-over-network access are still unverified. Simulated success is not hardware acceptance.
