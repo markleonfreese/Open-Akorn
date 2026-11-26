@@ -49,14 +49,14 @@ If Wi-Fi is unavailable, use Bluetooth on the laptop. Install the optional depen
 python3 -m venv .venv
 ```
 
-Activate it (macOS/Linux: source .venv/bin/activate; Windows PowerShell: .venv\\Scripts\\Activate.ps1, or use .venv\\Scripts\\python.exe directly). Then:
+Activate it (macOS/Linux: run `source .venv/bin/activate`; Windows PowerShell: run `.\.venv\Scripts\Activate.ps1`, or use `.\.venv\Scripts\python.exe` directly). Then:
 
 ```sh
 python3 -m pip install bleak
-python3 -m bleak
+python3 -c "import asyncio; from bleak import BleakScanner; print(asyncio.run(BleakScanner.discover(timeout=8)))"
 ```
 
-The Bleak CLI may vary by installed version; if discovery does not work, use the OS Bluetooth settings or a BLE scanner to identify the exact Akorn-* advertisement. Do not pair with unknown devices or enter network credentials. Grant normal Bluetooth permissions if prompted.
+On Windows, use `py -3` in place of `python3`. This calls Bleak's documented async scanner API ([Bleak scanner documentation](https://bleak.readthedocs.io/en/stable/api/scanner.html)). BLE support depends on the computer's adapter and OS; current Tier 1 support is Linux with BlueZ 5.55+, macOS 10.15+, and Windows 11 ([Bleak platform support](https://bleak.readthedocs.io/en/stable/)). Find the exact `Akorn-*` advertisement name in the output; keep device addresses private. If scanning fails, stop and use the OS Bluetooth settings or a BLE scanner. Do not pair with unknown devices or enter network credentials. Grant normal Bluetooth permissions if prompted.
 
 ```sh
 python3 monitor.py --ble-name 'Akorn-EXACT-NAME'
@@ -77,9 +77,7 @@ Use this checklist with the full procedure in [bench.md](bench.md). Keep the gri
 - [ ] Confirm the factory controller remains usable and unchanged. Do not proceed past any disagreement.
 - [ ] For PWA checks, stop the local gateway and confirm temperatures disappear. Test offline app-shell startup separately; the PWA on a laptop only serves that laptop.
 
-Record observations in the table below. Do not include MAC/serial/IP, SSID, passwords, or raw private captures in public reports.
-
-Copy this table into a private note. Do not include MAC, serial, SSID, passwords, full network captures or private IP in a public issue.
+Copy the table into a private note and share only sanitised observations. Keep MAC/serial/IP, SSID, passwords and raw private captures out of public reports.
 
 | Check | Observed / pass / fail |
 |---|---|
