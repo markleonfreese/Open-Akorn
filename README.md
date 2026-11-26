@@ -16,6 +16,8 @@ python monitor.py --ble-name 'Akorn-EXACT-NAME'
 This subscribes only to the documented status-notification characteristic; it does not provision, pair by PIN, or send controller commands. If the controller is not found or the status payload differs, the dashboard stays disconnected. BLE behavior is only mock-tested; no physical device has been checked.
 
 ## Cold-grill hardware experiment
+
+Start with the [owner quick-start guide](docs/owner-quickstart.md) for installation, demo, Wi-Fi/BLE and a private acceptance checklist. See the [Deep Research report and pinned upstream comparison](docs/deep-research-report-2026-11-26.md).
 Follow [the bench procedure](docs/bench.md). For your own already-provisioned device, close the original app, use the known private LAN IP, and run:
 ```sh
 python monitor.py --ip 192.168.1.50 --frame-size 20
