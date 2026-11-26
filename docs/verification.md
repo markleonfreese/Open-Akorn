@@ -15,7 +15,7 @@
 - Chrome opened the local demo at `http://127.0.0.1:18080/`; it showed SIMULATION, Celsius readings, probe 2 disconnected, and the monitoring-only safety note.
 - On localhost the page was a secure context; the active service worker was `activated` and controlled the page. The manifest had `display: standalone` and `start_url: /`. Cache Storage contained only the app shell (HTML, JavaScript, CSS, manifest and icons); no telemetry response was cached.
 - Chrome exposed an install action and opened its local “Install app” dialog. The app was not installed or launched in standalone mode during this check.
-- With the local gateway process stopped while the controlled page was already open, the app shell remained visible and showed “Waiting for local gateway”; all temperatures were blank and fan/alarm state was unknown. This verifies live connection-loss freshness behavior. It does not establish cold-starting an installed PWA while offline.
+- With the local gateway process stopped, reloading the already-controlled browser tab loaded the cached app shell. It showed “Waiting for local gateway”; all temperatures were blank and fan/alarm state was unknown. This verifies an offline shell reload and connection-loss freshness in that browser profile. The PWA was not installed, so standalone installed-app launch remains unverified.
 - Automated service-worker tests also verify shell caching and network-only status fetches. PWA testing used the demo only; no grill or phone/tablet connected.
 
 ## Not verified / owner acceptance gates
