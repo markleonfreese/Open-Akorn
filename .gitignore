@@ -14,4 +14,4 @@ local.properties
 captures/
 decompiled/
 .env
-*.csv
+captures/*.csv
