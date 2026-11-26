@@ -30,4 +30,8 @@ python -m unittest discover -s tests -v
 
 See [research and source provenance](docs/research.md), [roadmap](docs/roadmap.md) and [agent instructions](AGENTS.md). A surviving community implementation, [chargrillerd](https://github.com/grzbiet/cg980app/tree/2236faf93f3d2b0663764a0379131d97aef77c2e), already reports Auto AKORN support; use its documented protocol as evidence rather than reinventing it.
 
+## Home Assistant MQTT message adapter (not connected)
+
+[`ha_mqtt.py`](docs/ha-mqtt.md) prepares sensor-only MQTT discovery and availability messages for a future local bridge. Its tests use an in-memory fake publisher. This repository does not connect to a broker, configure credentials, publish to Home Assistant, or integrate the adapter into the monitor process. Measurement messages are non-retained; retained availability makes stale/disconnected probes unavailable instead of reusing an old temperature. The demo is never identified as a live grill.
+
 **Not a safety controller.** No command API, remote fan control, provisioning, unattended fire operation or automatic deployment in this POC. Physical compatibility is unverified. No APK or decompiled source is included.
