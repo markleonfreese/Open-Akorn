@@ -22,3 +22,7 @@ The in-memory publisher tests cover retained sensor discovery and availability, 
 ## Not verified
 
 No MQTT broker, Home Assistant instance, live TCP grill, BLE device, browser rendering, physical compatibility or cold-grill acceptance was tested. No app startup, device command, provisioning, deployment, merge or paid service was used. Treat readings as experimental and never as safety guidance.
+
+## Deep Research follow-up
+
+Inspected head 8aafe7acda7275d59f3d77fb2d7f1ecc005df3b5 and existing 22-test report above; did not independently execute Python in this session. Added five read-only regression tests (e82eca256d3433e0d471d9d5b0a3c36c5db84b94), including sentinel coverage, alarm/reserved byte, one example of misalignment rejection, stale data suppression and localhost HTTP POST rejection. No runtime logic changed. Added bounded PR-only CI (5d1b4adada91ce23e5ed02ebaac4f35ee1835f85). GitHub workflow query at 1c0e9b45db7c7c8060a78cf5e3d2242086330303 returned no runs; new tests and CI are unverified, not passed. Run current suite on Python 3.11+ and inspect actual CI logs before merging. Research and owner quick-start now linked in README. Hardware, broker, BLE and browser acceptance still pending. No grill commands, deployment or merge.
