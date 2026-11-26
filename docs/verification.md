@@ -14,9 +14,9 @@
 
 - Chrome opened the local demo at `http://127.0.0.1:18080/`; it showed SIMULATION, Celsius readings, probe 2 disconnected, and the monitoring-only safety note.
 - On localhost the page was a secure context; the active service worker was `activated` and controlled the page. The manifest had `display: standalone` and `start_url: /`. Cache Storage contained only the app shell (HTML, JavaScript, CSS, manifest and icons); no telemetry response was cached.
-- Chrome exposed an install action and opened its local “Install app” dialog. The app was not installed or launched in standalone mode during this check.
-- With the local gateway process stopped, reloading the already-controlled browser tab loaded the cached app shell. It showed “Waiting for local gateway”; all temperatures were blank and fan/alarm state was unknown. This verifies an offline shell reload and connection-loss freshness in that browser profile. The PWA was not installed, so standalone installed-app launch remains unverified.
-- Automated service-worker tests also verify shell caching and network-only status fetches. PWA testing used the demo only; no grill or phone/tablet connected.
+- On 27 Nov 2026, Chrome reported “Successfully installed” for **Open-Akorn Local Monitor** at `http://127.0.0.1:18080/`. Selecting **Open tab in app** launched a separate standalone app window with no browser address bar or tabs.
+- The standalone launch was performed while the local gateway was stopped; no process was listening on port 18080. The cached app shell opened and showed “Waiting for local gateway”, blank pit/probe readings, and unknown fan/alarm state. This verifies installed-app offline shell launch and connection-loss freshness in this local Chrome/macOS profile. No live telemetry remained visible.
+- Automated service-worker tests also verify shell caching and network-only status fetches. PWA browser evidence used the local demo only; no grill or phone/tablet connected.
 
 ## Not verified / owner acceptance gates
 

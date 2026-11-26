@@ -96,7 +96,7 @@ Copy the table into a private note and share only sanitised observations. Keep M
 
 For a single current reading, open http://127.0.0.1:8080/api/status. The raw_hex field is status telemetry; share only sanitised status samples after reviewing them. No raw HCI or network captures in Git. Do not treat the dashboard as safety guidance. No controls are enabled.
 
-The dashboard is an installable PWA on supported browsers. It caches the app shell only. If the local gateway is unreachable, current temperatures disappear rather than showing old values. The monitor binds to `127.0.0.1`, so the PWA works on the same computer only; private-network phone/tablet access requires a separately approved authenticated HTTPS design.
+The dashboard is an installable PWA on supported browsers. On the same computer, start a demo monitor with `python3 monitor.py --demo --port 18080` (on Windows use `py -3 monitor.py --demo --port 18080`), then open `http://127.0.0.1:18080/` and choose **Install app** in the page or Chrome's install icon. Launch **Open-Akorn Local Monitor** from the installed-app list. Chrome associates the installed app with its origin and port, so use the same port when reopening it. The service worker caches the app shell only. If the local gateway is unreachable, current temperatures disappear rather than showing old values. The monitor binds to `127.0.0.1`, so the PWA works on the same computer only; private-network phone/tablet access requires a separately approved authenticated HTTPS design.
 
 ## 6. Stop
 
