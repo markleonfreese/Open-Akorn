@@ -1,24 +1,28 @@
 # Owner quick start: cold AKORN test
 
-**No charcoal, no ignition, no heat.** The prototype is monitoring only, not a safety device. Use a laptop near the grill. Keep the factory controller and wiring intact. Do not use a live cook to test this.
+**No charcoal, no ignition, no heat.** The prototype is monitoring only, not a safety device. Keep the factory controller and wiring intact. Use the demo before going near the grill; do not test during a cook.
 
-## 1. Install and check the demo
+## 1. Install and check the simulator
 
-Install Python 3.11 or newer and Git if not already installed. In Terminal (macOS/Linux) or PowerShell (Windows):
+On macOS, Windows, Linux or Raspberry Pi OS, install Git and Python 3.11 or newer. Python's standard library is enough for the demo. In Terminal (macOS/Linux/Raspberry Pi) or PowerShell (Windows):
 
 ```sh
-git clone -b poc/local-monitor https://github.com/markleonfreese/Open-Akorn.git
+git clone --branch poc/local-monitor --single-branch https://github.com/markleonfreese/Open-Akorn.git
 cd Open-Akorn
 python3 --version
 python3 -m unittest discover -s tests -v
 python3 monitor.py --demo
 ```
 
-On Windows use `py -3` in place of `python3`. Open http://127.0.0.1:8080 on the same laptop. Expect SIMULATION, pit 40.6°C, target 107.2°C, meat 1 20.6°C and meat 2 not connected. Press Ctrl+C to stop. If tests fail, do not proceed; record the output and commit (`git rev-parse HEAD`).
+On Windows, use `py -3` in place of `python3` for each Python command. Open http://127.0.0.1:8080 in a browser on the same computer. On Raspberry Pi, use a browser running on the Pi; this gateway is loopback-only, so another phone/tablet cannot reach it. Expect SIMULATION, pit 40.6°C, target 107.2°C, meat 1 at 20.6°C and meat 2 disconnected. Press Ctrl+C to stop. If tests fail, record the output and `git rev-parse HEAD` before stopping.
 
-## 1a. Build the Android preview
+## 2. Install the Android preview
 
-Install JDK 17+ and Android SDK Platform 36, accept its Android SDK license in the SDK Manager, then build the native app and its fixture tests:
+A debug APK is available locally as `Open-Akorn-debug-0.1.0-27d9e56.apk` in the owner's Downloads folder. Copy it to the owner-controlled Android phone/tablet (for example by USB), open it in Files, review Android's install prompt and install the package. This is a locally built debug preview, not a Play Store release. Start with **Try demo**. Remove it later through Android Settings → Apps → Open-Akorn → Uninstall.
+
+The APK supports Android 10/API 29 and newer. TCP asks for a manually entered private IPv4 address and has no runtime permission prompt. BLE requests Nearby devices when first used on Android 12+, or Location permission for BLE scanning on Android 10–11. Denying permission leaves BLE disconnected. The app disconnects when backgrounded; reopen it and tap Connect again. Use one connection at a time. The phone/tablet screen size, install flow, permissions and performance have not yet been checked on the target devices.
+
+To reproduce the APK instead, install JDK 17+ and Android SDK Platform 36, accept that platform's SDK licence in the SDK Manager, then build and run fixture tests:
 
 ```sh
 cd android
@@ -27,7 +31,7 @@ cd android
 
 The debug-signed APK is written to `android/app/build/outputs/apk/debug/app-debug.apk`. Use **Try demo** first after installing on an owner-controlled phone or tablet. The app disconnects when backgrounded and must be reconnected when reopened. It permits one direct TCP or BLE session at a time. For actual grill testing, continue only with the cold-grill procedure below and the factory controller unchanged.
 
-## 2. Try the existing Wi-Fi connection first
+## 3. Try the existing Wi-Fi connection first
 
 Power the cold controller on. Record model and firmware if visible. If already connected to home Wi-Fi, find its address in your own router's connected devices list. Close the original app; only one TCP client is reportedly supported. Do not scan the subnet or change router settings.
 
@@ -37,7 +41,7 @@ python3 monitor.py --ip 192.168.1.50 --frame-size 20
 
 Replace the example IP with the actual private address. Open the same browser URL. If the monitor cannot connect or values differ from the controller, stop and record what happened. Do not guess alternate frame sizes or issue commands.
 
-## 3. Bluetooth fallback
+## 4. Bluetooth fallback
 
 If Wi-Fi is unavailable, use Bluetooth on the laptop. Install the optional dependency into a virtual environment:
 
@@ -60,9 +64,20 @@ python3 monitor.py --ble-name 'Akorn-EXACT-NAME'
 
 Replace the example with the exact name observed. This subscribes to status notifications only; it does not provision or send grill commands. If no telemetry appears, stop. BLE reconnection currently requires restarting the monitor. No physical BLE session has been verified.
 
-## 4. Record the results
+## 5. Cold-grill checklist and results
 
-Use [bench.md](bench.md) for the full gate. Observe 30 consecutive readings. Compare pit current/target, both meat probes, unplugged probes and targets changed using the physical controller only. Confirm stale/disconnected state hides readings. If authorised to manage your own network, test offline LAN operation without changing shared security/DNS settings. Power-cycle cold, and check reconnect. Stop if anything differs.
+Use this checklist with the full procedure in [bench.md](bench.md). Keep the grill cold and the factory controller unchanged. Stop at any mismatch; do not add fuel or ignite.
+
+- [ ] Record model, firmware, Android version, phone/tablet model, and test commit; keep identifiers private.
+- [ ] Start with **Try demo**, confirm SIMULATION is clear, and verify both Celsius and disconnected-probe display.
+- [ ] Choose one transport (TCP or BLE); close the official app and other monitor clients first.
+- [ ] Compare 30+ consecutive pit/probe readings and targets with the panel. Change a target on the physical controller only and check the reported value follows.
+- [ ] Unplug a probe only while cold; confirm its reading becomes unavailable. Check natural alarm/fan status only; do not provoke a fault.
+- [ ] Stop the monitor or disconnect the link; confirm readings clear. Reconnect manually and record startup/reconnect behavior.
+- [ ] Confirm the factory controller remains usable and unchanged. Do not proceed past any disagreement.
+- [ ] For PWA checks, stop the local gateway and confirm temperatures disappear. Test offline app-shell startup separately; the PWA on a laptop only serves that laptop.
+
+Record observations in the table below. Do not include MAC/serial/IP, SSID, passwords, or raw private captures in public reports.
 
 Copy this table into a private note. Do not include MAC, serial, SSID, passwords, full network captures or private IP in a public issue.
 
@@ -85,6 +100,6 @@ For a single current reading, open http://127.0.0.1:8080/api/status. The raw_hex
 
 The dashboard is an installable PWA on supported browsers. It caches the app shell only. If the local gateway is unreachable, current temperatures disappear rather than showing old values. The monitor binds to `127.0.0.1`, so the PWA works on the same computer only; private-network phone/tablet access requires a separately approved authenticated HTTPS design.
 
-## 5. Stop
+## 6. Stop
 
 Ctrl+C closes the monitor. Confirm the original controller remains usable. If the controller is not provisioned and BLE-only fails, stop and report the result; provisioning is a separate owner-approved operation, not part of this test.
