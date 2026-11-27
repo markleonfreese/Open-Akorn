@@ -468,8 +468,18 @@ class MainActivity : Activity() {
     }
 
     private fun closeGatt(gatt: BluetoothGatt) {
-        try { gatt.disconnect() } catch (_: Exception) { }
-        try { gatt.close() } catch (_: Exception) { }
+        try {
+            gatt.disconnect()
+        } catch (_: SecurityException) {
+            // Permissions can be revoked while an asynchronous GATT callback is pending.
+        } catch (_: Exception) {
+        }
+        try {
+            gatt.close()
+        } catch (_: SecurityException) {
+            // Closing remains best-effort after permission revocation.
+        } catch (_: Exception) {
+        }
     }
 
     private fun stopBleScan() {
@@ -478,7 +488,12 @@ class MainActivity : Activity() {
         val scanner = bleScanner
         val callback = bleScanCallback
         if (scanner != null && callback != null) {
-            try { scanner.stopScan(callback) } catch (_: Exception) { }
+            try {
+                scanner.stopScan(callback)
+            } catch (_: SecurityException) {
+                // The permission may have been revoked between scan start and stop.
+            } catch (_: Exception) {
+            }
         }
         bleScanner = null
         bleScanCallback = null
