@@ -115,8 +115,16 @@ class MainActivity : Activity() {
                 failGatt(gatt, "The controller did not negotiate the packet size needed for status notifications.")
                 return
             }
-            if (!gatt.discoverServices()) {
-                failGatt(gatt, "Could not inspect the Bluetooth status service.")
+            if (!hasBlePermissions()) {
+                failGatt(gatt, "Bluetooth permission was revoked.")
+                return
+            }
+            try {
+                if (!gatt.discoverServices()) {
+                    failGatt(gatt, "Could not inspect the Bluetooth status service.")
+                }
+            } catch (_: SecurityException) {
+                failGatt(gatt, "Bluetooth permission was revoked.")
             }
         }
 
@@ -126,25 +134,24 @@ class MainActivity : Activity() {
                 failGatt(gatt, "Could not inspect the Bluetooth status service.")
                 return
             }
-            val service = gatt.getService(serviceUuid)
-            val characteristic = service?.getCharacteristic(statusUuid)
-            val descriptor = characteristic?.getDescriptor(cccdUuid)
-            if (characteristic == null || descriptor == null ||
-                characteristic.properties and BluetoothGattCharacteristic.PROPERTY_NOTIFY == 0
-            ) {
-                failGatt(gatt, "The expected read-only AKORN status characteristic was not found.")
-                return
-            }
-            val enabled = try {
-                gatt.setCharacteristicNotification(characteristic, true)
-            } catch (_: SecurityException) {
-                false
-            }
-            if (!enabled) {
-                failGatt(gatt, "Could not subscribe to the AKORN status notification.")
+            if (!hasBlePermissions()) {
+                failGatt(gatt, "Bluetooth permission was revoked.")
                 return
             }
             try {
+                val service = gatt.getService(serviceUuid)
+                val characteristic = service?.getCharacteristic(statusUuid)
+                val descriptor = characteristic?.getDescriptor(cccdUuid)
+                if (characteristic == null || descriptor == null ||
+                    characteristic.properties and BluetoothGattCharacteristic.PROPERTY_NOTIFY == 0
+                ) {
+                    failGatt(gatt, "The expected read-only AKORN status characteristic was not found.")
+                    return
+                }
+                if (!gatt.setCharacteristicNotification(characteristic, true)) {
+                    failGatt(gatt, "Could not subscribe to the AKORN status notification.")
+                    return
+                }
                 val accepted = if (Build.VERSION.SDK_INT >= 33) {
                     gatt.writeDescriptor(descriptor, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE) ==
                         BluetoothStatusCodes.SUCCESS
