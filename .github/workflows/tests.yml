@@ -54,6 +54,16 @@ jobs:
       - name: Test and package debug APK
         working-directory: android
         run: ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug
+      - name: Print Android lint findings
+        if: always()
+        working-directory: android
+        run: |
+          report=app/build/intermediates/lint_intermediate_text_report/debug/lintReportDebug/lint-results-debug.txt
+          if [ -f "$report" ]; then
+            cat "$report"
+          else
+            echo "Android lint report was not generated."
+          fi
       - name: Upload owner preview APK
         if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.login == 'markleonfreese'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
