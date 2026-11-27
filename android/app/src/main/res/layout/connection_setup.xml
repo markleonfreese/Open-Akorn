@@ -52,6 +52,13 @@
             android:textColor="@color/akorn_ink"
             android:textSize="18sp"
             android:textStyle="bold" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/wifi_connection_help"
+            android:textColor="@color/akorn_muted"
+            android:textSize="14sp" />
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

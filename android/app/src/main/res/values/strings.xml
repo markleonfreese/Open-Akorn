@@ -34,6 +34,7 @@
     <string name="try_demo">Try demo</string>
     <string name="disconnect">Disconnect</string>
     <string name="connect_by_wifi">Connect by Wi-Fi</string>
+    <string name="wifi_connection_help">Use the router's device list to find the grill's local IP. The grill must already be connected to your Wi-Fi; this app does not set it up.</string>
     <string name="grill_ip_address">Grill IP address</string>
     <string name="connect">Connect</string>
     <string name="connect_by_bluetooth">Connect by Bluetooth</string>

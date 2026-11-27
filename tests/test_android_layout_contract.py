@@ -46,6 +46,10 @@ class AndroidLayoutContractTests(unittest.TestCase):
             node.attrib['name']
             for node in parse(RES / 'values' / 'strings.xml').findall('string')
         }
+        cls.string_values = {
+            node.attrib['name']: node.text
+            for node in parse(RES / 'values' / 'strings.xml').findall('string')
+        }
 
     def test_phone_and_tablet_layouts_share_the_same_dashboard_and_setup_panels(self):
         phone = parse(RES / 'layout' / 'activity_main.xml')
@@ -83,6 +87,14 @@ class AndroidLayoutContractTests(unittest.TestCase):
                     value = node.attrib.get(ANDROID + 'layout_height', '')
                     self.assertTrue(value.endswith('dp'), f'{node.tag} height must use dp')
                     self.assertGreaterEqual(float(value[:-2]), 48)
+
+    def test_wifi_setup_explains_manual_ip_and_existing_network_requirement(self):
+        setup_texts = [node.attrib.get(ANDROID + 'text') for node in self.panels['connection_setup'].iter()]
+        self.assertIn('@string/wifi_connection_help', setup_texts)
+        help_text = self.string_values['wifi_connection_help'].lower()
+        self.assertIn('router', help_text)
+        self.assertIn('already be connected', help_text)
+        self.assertIn('does not set it up', help_text)
 
     def test_dynamic_connection_alarm_and_fan_status_are_accessible_live_regions(self):
         ids = {
