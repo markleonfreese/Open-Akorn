@@ -25,7 +25,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Waiting for telemetry"
+            android:text="Not connected"
             android:textColor="@color/akorn_muted"
             android:textSize="16sp"
             android:textStyle="bold" />
@@ -35,7 +35,104 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="3dp"
-            android:text="Choose simulation, TCP or Bluetooth. One connection at a time."
+            android:text="Connect your grill below to see temperatures."
+            android:textColor="@color/akorn_muted"
+            android:textSize="14sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="vertical"
+            android:background="@color/akorn_green"
+            android:padding="16dp">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="0dp"
+                android:text="Grill temperature"
+                android:textColor="@android:color/white"
+                android:textSize="16sp" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:orientation="vertical">
+                <TextView
+                    android:id="@+id/pitCurrent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="— °C"
+                    android:textColor="@android:color/white"
+                    android:textSize="52sp"
+                    android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/pitTarget"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Target —"
+                    android:textColor="@android:color/white"
+                    android:textSize="16sp" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:baselineAligned="false"
+            android:orientation="horizontal">
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@color/akorn_card"
+                android:padding="12dp"
+                android:orientation="vertical">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Meat probe 1" android:textColor="@color/akorn_muted" android:textSize="15sp" />
+                <TextView android:id="@+id/probe1Current" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="— °C" android:textColor="@color/akorn_ink" android:textSize="30sp" android:textStyle="bold" />
+                <TextView android:id="@+id/probe1Target" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Target —" android:textColor="@color/akorn_muted" android:textSize="14sp" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:layout_weight="1"
+                android:background="@color/akorn_card"
+                android:padding="12dp"
+                android:orientation="vertical">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Meat probe 2" android:textColor="@color/akorn_muted" android:textSize="15sp" />
+                <TextView android:id="@+id/probe2Current" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="— °C" android:textColor="@color/akorn_ink" android:textSize="30sp" android:textStyle="bold" />
+                <TextView android:id="@+id/probe2Target" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Target —" android:textColor="@color/akorn_muted" android:textSize="14sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/fanAlarmText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:background="@color/akorn_card"
+            android:padding="14dp"
+            android:text="Reported fan: unknown  •  Alarm: unknown"
+            android:textColor="@color/akorn_ink"
+            android:textSize="15sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Connect your grill"
+            android:textColor="@color/akorn_ink"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Try the demo first, or connect to your AKORN. One connection at a time."
             android:textColor="@color/akorn_muted"
             android:textSize="14sp" />
 
@@ -63,7 +160,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="22dp"
-            android:text="Wi-Fi connection"
+            android:text="Connect by Wi-Fi"
             android:textColor="@color/akorn_ink"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -78,7 +175,7 @@
                 android:layout_width="0dp"
                 android:layout_height="52dp"
                 android:layout_weight="1"
-                android:hint="Grill IP, e.g. 192.168.1.50"
+                android:hint="Grill IP address"
                 android:inputType="textVisiblePassword"
                 android:singleLine="true"
                 android:textSize="15sp" />
@@ -94,7 +191,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
-            android:text="Bluetooth fallback"
+            android:text="Connect by Bluetooth"
             android:textColor="@color/akorn_ink"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -109,7 +206,7 @@
                 android:layout_width="0dp"
                 android:layout_height="52dp"
                 android:layout_weight="1"
-                android:hint="Exact Akorn-* device name"
+                android:hint="AKORN device name"
                 android:inputType="textVisiblePassword"
                 android:singleLine="true"
                 android:textSize="15sp" />
@@ -120,77 +217,6 @@
                 android:layout_marginStart="8dp"
                 android:text="Connect" />
         </LinearLayout>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="Pit temperature"
-            android:textColor="@color/akorn_muted"
-            android:textSize="16sp" />
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-            <TextView
-                android:id="@+id/pitCurrent"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="— °C"
-                android:textColor="@color/akorn_ink"
-                android:textSize="48sp"
-                android:textStyle="bold" />
-            <TextView
-                android:id="@+id/pitTarget"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Target —"
-                android:textColor="@color/akorn_muted"
-                android:textSize="16sp" />
-        </LinearLayout>
-
-        <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="18dp" android:background="@color/akorn_border" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:baselineAligned="false"
-            android:orientation="horizontal">
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Meat probe 1" android:textColor="@color/akorn_muted" android:textSize="15sp" />
-                <TextView android:id="@+id/probe1Current" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="— °C" android:textColor="@color/akorn_ink" android:textSize="30sp" android:textStyle="bold" />
-                <TextView android:id="@+id/probe1Target" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Target —" android:textColor="@color/akorn_muted" android:textSize="14sp" />
-            </LinearLayout>
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="14dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
-                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Meat probe 2" android:textColor="@color/akorn_muted" android:textSize="15sp" />
-                <TextView android:id="@+id/probe2Current" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="— °C" android:textColor="@color/akorn_ink" android:textSize="30sp" android:textStyle="bold" />
-                <TextView android:id="@+id/probe2Target" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Target —" android:textColor="@color/akorn_muted" android:textSize="14sp" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/fanAlarmText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:background="@color/akorn_card"
-            android:padding="14dp"
-            android:text="Reported fan: unknown  •  Alarm: unknown"
-            android:textColor="@color/akorn_ink"
-            android:textSize="15sp" />
 
         <TextView
             android:layout_width="match_parent"
