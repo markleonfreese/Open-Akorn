@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class MainActivity : Activity() {
     private val handler = Handler(Looper.getMainLooper())
     private val store = TelemetryStore()
+    private val sessionGate = TransportSessionGate()
     private val serviceUuid = UUID.fromString(AkornProtocol.STATUS_SERVICE_UUID)
     private val statusUuid = UUID.fromString(AkornProtocol.STATUS_CHARACTERISTIC_UUID)
     private val cccdUuid = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
@@ -51,13 +52,14 @@ class MainActivity : Activity() {
 
     @Volatile private var tcpMonitor: TcpMonitor? = null
     @Volatile private var bleGatt: BluetoothGatt? = null
+    @Volatile private var bleSession = 0L
     private var tcpStop = AtomicBoolean(true)
     private var bleScanner: BluetoothLeScanner? = null
     private var bleScanCallback: ScanCallback? = null
-    private var expectedBleName: String? = null
+    private var bleScanTimeout: Runnable? = null
     private var pendingBleName: String? = null
     private var demoReading: TelemetryReading? = null
-    private var activeSource = "none"
+    @Volatile private var activeSource = "none"
 
     private val renderTick = object : Runnable {
         override fun run() {
@@ -76,50 +78,17 @@ class MainActivity : Activity() {
         }
     }
 
-    private val scanTimeout = Runnable {
-        stopBleScan()
-        if (activeSource == "ble" && bleGatt == null) {
-            store.disconnect("ble", demo = false)
-            showDetail("No matching device was found. Check the exact Akorn-* name and try again.")
-        }
-    }
-
-    private val scanCallback = object : ScanCallback() {
-        override fun onScanResult(callbackType: Int, result: ScanResult) {
-            val wanted = expectedBleName ?: return
-            val name = try {
-                result.device.name
-            } catch (_: SecurityException) {
-                null
-            }
-            if (name == wanted) {
-                handler.post {
-                    if (activeSource != "ble" || bleGatt != null) return@post
-                    stopBleScan()
-                    connectBle(result.device)
-                }
-            }
-        }
-
-        override fun onScanFailed(errorCode: Int) {
-            handler.post {
-                stopBleScan()
-                if (activeSource == "ble") {
-                    store.disconnect("ble", demo = false)
-                    showDetail("Bluetooth scan failed. Check permissions and try again.")
-                }
-            }
-        }
-    }
-
     private val gattCallback = object : BluetoothGattCallback() {
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
+            if (!isCurrentGatt(gatt)) return
             if (status != BluetoothGatt.GATT_SUCCESS) {
                 failGatt(gatt, "Bluetooth connection ended. Tap Connect to retry.")
                 return
             }
             if (newState == BluetoothProfile.STATE_CONNECTED) {
-                handler.post { showDetail("Bluetooth connected; checking the read-only status service…") }
+                handler.post {
+                    if (isCurrentGatt(gatt)) showDetail("Bluetooth connected; checking the read-only status service…")
+                }
                 val requested = try {
                     gatt.requestMtu(64)
                 } catch (_: SecurityException) {
@@ -141,6 +110,7 @@ class MainActivity : Activity() {
         }
 
         override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
+            if (!isCurrentGatt(gatt)) return
             if (status != BluetoothGatt.GATT_SUCCESS || mtu < AkornProtocol.MIN_BLE_MTU) {
                 failGatt(gatt, "The controller did not negotiate the packet size needed for status notifications.")
                 return
@@ -151,6 +121,7 @@ class MainActivity : Activity() {
         }
 
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
+            if (!isCurrentGatt(gatt)) return
             if (status != BluetoothGatt.GATT_SUCCESS) {
                 failGatt(gatt, "Could not inspect the Bluetooth status service.")
                 return
@@ -190,16 +161,19 @@ class MainActivity : Activity() {
         }
 
         override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
+            if (!isCurrentGatt(gatt)) return
             if (descriptor.uuid == cccdUuid && status != BluetoothGatt.GATT_SUCCESS) {
                 failGatt(gatt, "Could not enable read-only status notifications.")
             } else if (descriptor.uuid == cccdUuid) {
-                handler.post { showDetail("Subscribed to status only. Waiting for a fresh reading…") }
+                handler.post {
+                    if (isCurrentGatt(gatt)) showDetail("Subscribed to status only. Waiting for a fresh reading…")
+                }
             }
         }
 
         @Suppress("OVERRIDE_DEPRECATION", "DEPRECATION")
         override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
-            handleNotification(characteristic.value ?: return)
+            handleNotification(gatt, characteristic.value ?: return)
         }
 
         override fun onCharacteristicChanged(
@@ -207,7 +181,7 @@ class MainActivity : Activity() {
             characteristic: BluetoothGattCharacteristic,
             value: ByteArray,
         ) {
-            handleNotification(value)
+            handleNotification(gatt, value)
         }
     }
 
@@ -293,6 +267,7 @@ class MainActivity : Activity() {
     private fun startTcp(address: ByteArray) {
         stopTransportOnly()
         activeSource = "tcp"
+        val session = sessionGate.start()
         val stop = AtomicBoolean(false)
         tcpStop = stop
         val monitor = TcpMonitor(address)
@@ -305,7 +280,7 @@ class MainActivity : Activity() {
                 shouldStop = { stop.get() },
                 onReading = { reading ->
                     handler.post {
-                        if (!stop.get()) {
+                        if (!stop.get() && activeSource == "tcp" && sessionGate.isCurrent(session)) {
                             store.publish(reading, "tcp", demo = false, nowMillis = SystemClock.elapsedRealtime())
                             showDetail("Read-only TCP status • frame 20 bytes • local connection")
                             render()
@@ -314,6 +289,7 @@ class MainActivity : Activity() {
                 },
                 onUnavailable = {
                     handler.post {
+                        if (stop.get() || activeSource != "tcp" || !sessionGate.isCurrent(session)) return@post
                         store.disconnect("tcp", demo = false)
                         showDetail("TCP is unavailable or the status frame was invalid. Check the cold-grill guide, then tap Connect to retry.")
                         render()
@@ -338,13 +314,14 @@ class MainActivity : Activity() {
             requestPermissions(neededBlePermissions(), BLE_PERMISSION_REQUEST)
             return
         }
+        pendingBleName = null
         startBle(name)
     }
 
     private fun startBle(name: String) {
         stopTransportOnly()
         activeSource = "ble"
-        expectedBleName = name
+        val session = sessionGate.start()
         store.connecting("ble")
         showDetail("Scanning briefly for the exact device name. No pairing or provisioning is performed.")
         render()
@@ -364,47 +341,97 @@ class MainActivity : Activity() {
             return
         }
         bleScanner = scanner
-        bleScanCallback = scanCallback
+        val callback = createBleScanCallback(session, name)
+        bleScanCallback = callback
         try {
             scanner.startScan(
                 null,
                 ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_POWER).build(),
-                scanCallback,
+                callback,
             )
-            handler.postDelayed(scanTimeout, BLE_SCAN_TIMEOUT_MS)
+            val timeout = Runnable {
+                if (!isCurrentSession(session, "ble")) return@Runnable
+                stopBleScan()
+                if (bleGatt == null) {
+                    store.disconnect("ble", demo = false)
+                    showDetail("No matching device was found. Check the exact Akorn-* name and try again.")
+                    render()
+                }
+            }
+            bleScanTimeout = timeout
+            handler.postDelayed(timeout, BLE_SCAN_TIMEOUT_MS)
         } catch (_: SecurityException) {
+            stopBleScan()
             store.disconnect("ble", demo = false)
             showDetail("Bluetooth permission was not granted.")
         } catch (_: Exception) {
+            stopBleScan()
             store.disconnect("ble", demo = false)
             showDetail("Bluetooth scanning could not start.")
         }
         render()
     }
 
-    private fun connectBle(device: BluetoothDevice) {
-        showDetail("Connecting to the selected Bluetooth device…")
-        try {
-            bleGatt = device.connectGatt(this, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
-            handler.postDelayed({
-                if (activeSource == "ble" && bleGatt != null && store.snapshot(SystemClock.elapsedRealtime()).reading == null) {
-                    failGatt(bleGatt!!, "Bluetooth did not produce a fresh status reading. Tap Connect to retry.")
-                }
-            }, BLE_CONNECT_TIMEOUT_MS)
-        } catch (_: SecurityException) {
-            store.disconnect("ble", demo = false)
-            showDetail("Bluetooth permission was revoked.")
-        } catch (_: Exception) {
-            store.disconnect("ble", demo = false)
-            showDetail("The selected Bluetooth device could not be opened.")
+    private fun createBleScanCallback(session: Long, wantedName: String): ScanCallback = object : ScanCallback() {
+        override fun onScanResult(callbackType: Int, result: ScanResult) {
+            val name = try {
+                result.device.name
+            } catch (_: SecurityException) {
+                null
+            }
+            if (name != wantedName) return
+            handler.post {
+                if (!isCurrentSession(session, "ble") || bleGatt != null) return@post
+                stopBleScan()
+                connectBle(result.device, session)
+            }
+        }
+
+        override fun onScanFailed(errorCode: Int) {
+            handler.post {
+                if (!isCurrentSession(session, "ble")) return@post
+                stopBleScan()
+                store.disconnect("ble", demo = false)
+                showDetail("Bluetooth scan failed. Check permissions and try again.")
+                render()
+            }
         }
     }
 
-    private fun handleNotification(value: ByteArray) {
+    private fun connectBle(device: BluetoothDevice, session: Long) {
+        if (!isCurrentSession(session, "ble")) return
+        showDetail("Connecting to the selected Bluetooth device…")
+        try {
+            val gatt = device.connectGatt(this, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
+            bleSession = session
+            bleGatt = gatt
+            handler.postDelayed({
+                if (isCurrentSession(session, "ble") && bleGatt === gatt &&
+                    store.snapshot(SystemClock.elapsedRealtime()).reading == null
+                ) {
+                    failGatt(gatt, "Bluetooth did not produce a fresh status reading. Tap Connect to retry.")
+                }
+            }, BLE_CONNECT_TIMEOUT_MS)
+        } catch (_: SecurityException) {
+            if (isCurrentSession(session, "ble")) {
+                store.disconnect("ble", demo = false)
+                showDetail("Bluetooth permission was revoked.")
+                render()
+            }
+        } catch (_: Exception) {
+            if (isCurrentSession(session, "ble")) {
+                store.disconnect("ble", demo = false)
+                showDetail("The selected Bluetooth device could not be opened.")
+                render()
+            }
+        }
+    }
+
+    private fun handleNotification(gatt: BluetoothGatt, value: ByteArray) {
         try {
             val reading = AkornProtocol.decodeBle(value)
             handler.post {
-                if (activeSource == "ble") {
+                if (isCurrentGatt(gatt)) {
                     store.publish(reading, "ble", demo = false, nowMillis = SystemClock.elapsedRealtime())
                     showDetail("Read-only Bluetooth status • fresh notification received")
                     render()
@@ -412,7 +439,7 @@ class MainActivity : Activity() {
             }
         } catch (_: IllegalArgumentException) {
             handler.post {
-                if (activeSource == "ble") {
+                if (isCurrentGatt(gatt)) {
                     store.invalidate()
                     showDetail("An invalid status notification arrived; the previous reading was cleared.")
                     render()
@@ -423,7 +450,7 @@ class MainActivity : Activity() {
 
     private fun failGatt(gatt: BluetoothGatt, message: String) {
         handler.post {
-            if (bleGatt === gatt) {
+            if (isCurrentGatt(gatt)) {
                 bleGatt = null
                 store.disconnect("ble", demo = false)
                 showDetail(message)
@@ -439,7 +466,8 @@ class MainActivity : Activity() {
     }
 
     private fun stopBleScan() {
-        handler.removeCallbacks(scanTimeout)
+        bleScanTimeout?.let(handler::removeCallbacks)
+        bleScanTimeout = null
         val scanner = bleScanner
         val callback = bleScanCallback
         if (scanner != null && callback != null) {
@@ -450,6 +478,7 @@ class MainActivity : Activity() {
     }
 
     private fun stopTransportOnly() {
+        sessionGate.invalidate()
         handler.removeCallbacks(demoTick)
         demoReading = null
         tcpStop.set(true)
@@ -458,8 +487,15 @@ class MainActivity : Activity() {
         stopBleScan()
         val gatt = bleGatt
         bleGatt = null
+        bleSession = 0L
         if (gatt != null) closeGatt(gatt)
     }
+
+    private fun isCurrentSession(session: Long, source: String): Boolean =
+        activeSource == source && sessionGate.isCurrent(session)
+
+    private fun isCurrentGatt(gatt: BluetoothGatt): Boolean =
+        activeSource == "ble" && bleGatt === gatt && sessionGate.isCurrent(bleSession)
 
     private fun stopCurrentTransport(message: String) {
         stopTransportOnly()
@@ -485,9 +521,11 @@ class MainActivity : Activity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode != BLE_PERMISSION_REQUEST) return
         if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
-            pendingBleName?.let { startBle(it) }
+            val name = pendingBleName
+            pendingBleName = null
+            name?.let { startBle(it) }
         } else {
-            store.disconnect("ble", demo = false)
+            pendingBleName = null
             showDetail("Bluetooth permission was denied; no device was scanned.")
             render()
         }
