@@ -702,32 +702,36 @@ class MainActivity : Activity() {
             snapshot.source == "none" -> R.string.status_idle
             else -> R.string.status_live_monitor
         }
-        statusText.text = getString(statusFormat, stateLabel)
-        statusText.setTextColor(
-            resources.getColor(
-                if (snapshot.state == LinkState.LIVE) R.color.akorn_green else R.color.akorn_amber,
-                theme,
-            ),
+        statusText.setTextIfChanged(getString(statusFormat, stateLabel))
+        val statusColor = resources.getColor(
+            if (snapshot.state == LinkState.LIVE) R.color.akorn_green else R.color.akorn_amber,
+            theme,
         )
+        if (statusText.currentTextColor != statusColor) statusText.setTextColor(statusColor)
         val reading = snapshot.reading
         if (reading == null) {
-            pitCurrent.setText(R.string.temperature_unavailable)
-            pitTarget.setText(R.string.target_unavailable)
-            probe1Current.setText(R.string.temperature_unavailable)
-            probe1Target.setText(R.string.target_unavailable)
-            probe2Current.setText(R.string.temperature_unavailable)
-            probe2Target.setText(R.string.target_unavailable)
-            fanStatusText.setText(R.string.unknown)
-            alarmStatusText.setText(R.string.unknown)
-            alarmStatusText.setTextColor(getColor(R.color.akorn_ink))
+            val unavailable = getString(R.string.temperature_unavailable)
+            val targetUnavailable = getString(R.string.target_unavailable)
+            val unknown = getString(R.string.unknown)
+            pitCurrent.setTextIfChanged(unavailable)
+            pitTarget.setTextIfChanged(targetUnavailable)
+            probe1Current.setTextIfChanged(unavailable)
+            probe1Target.setTextIfChanged(targetUnavailable)
+            probe2Current.setTextIfChanged(unavailable)
+            probe2Target.setTextIfChanged(targetUnavailable)
+            fanStatusText.setTextIfChanged(unknown)
+            alarmStatusText.setTextIfChanged(unknown)
+            if (alarmStatusText.currentTextColor != getColor(R.color.akorn_ink)) {
+                alarmStatusText.setTextColor(getColor(R.color.akorn_ink))
+            }
             return
         }
-        pitCurrent.text = celsius(reading.pit.currentC)
-        pitTarget.text = getString(R.string.target_value, celsius(reading.pit.targetC))
-        probe1Current.text = celsius(reading.probe1.currentC)
-        probe1Target.text = getString(R.string.target_value, celsius(reading.probe1.targetC))
-        probe2Current.text = celsius(reading.probe2.currentC)
-        probe2Target.text = getString(R.string.target_value, celsius(reading.probe2.targetC))
+        pitCurrent.setTextIfChanged(celsius(reading.pit.currentC))
+        pitTarget.setTextIfChanged(getString(R.string.target_value, celsius(reading.pit.targetC)))
+        probe1Current.setTextIfChanged(celsius(reading.probe1.currentC))
+        probe1Target.setTextIfChanged(getString(R.string.target_value, celsius(reading.probe1.targetC)))
+        probe2Current.setTextIfChanged(celsius(reading.probe2.currentC))
+        probe2Target.setTextIfChanged(getString(R.string.target_value, celsius(reading.probe2.targetC)))
         val fan = when (reading.fanMode) {
             "auto" -> getString(R.string.fan_auto_reported)
             "manual" -> reading.fanPercent?.let {
@@ -735,9 +739,11 @@ class MainActivity : Activity() {
             } ?: getString(R.string.fan_mode_reported, getString(R.string.manual))
             else -> getString(R.string.unknown)
         }
-        fanStatusText.text = fan
-        alarmStatusText.setText(if (reading.alarm) R.string.alarm_active else R.string.alarm_not_reported_active)
-        alarmStatusText.setTextColor(getColor(if (reading.alarm) R.color.akorn_alarm else R.color.akorn_ink))
+        fanStatusText.setTextIfChanged(fan)
+        val alarmText = getString(if (reading.alarm) R.string.alarm_active else R.string.alarm_not_reported_active)
+        alarmStatusText.setTextIfChanged(alarmText)
+        val alarmColor = getColor(if (reading.alarm) R.color.akorn_alarm else R.color.akorn_ink)
+        if (alarmStatusText.currentTextColor != alarmColor) alarmStatusText.setTextColor(alarmColor)
     }
 
     private fun celsius(value: Double?): String = value?.let {
@@ -745,7 +751,11 @@ class MainActivity : Activity() {
     } ?: getString(R.string.temperature_unavailable)
 
     private fun showDetail(message: String) {
-        detailText.text = message
+        detailText.setTextIfChanged(message)
+    }
+
+    private fun TextView.setTextIfChanged(value: CharSequence) {
+        if (text.toString() != value.toString()) text = value
     }
 
     companion object {
