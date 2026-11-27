@@ -195,6 +195,19 @@
             android:textColor="@color/akorn_ink"
             android:textSize="18sp"
             android:textStyle="bold" />
+        <Button
+            android:id="@+id/bleDiscoverButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:text="Find nearby AKORN devices" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Or enter the device name manually"
+            android:textColor="@color/akorn_muted"
+            android:textSize="14sp" />
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

@@ -32,6 +32,9 @@ object AkornProtocol {
 
     private val bleHeader = byteArrayOf(0x00, 0x19, 0x14, 0x00)
 
+    fun isAkornDeviceName(name: String?): Boolean =
+        !name.isNullOrBlank() && name.startsWith("Akorn-") && name.length > "Akorn-".length
+
     fun decodeTcp(frame: ByteArray, frameSize: Int = DEFAULT_FRAME_SIZE): TelemetryReading =
         decodeFrame(frame, frameSize)
 

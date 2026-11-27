@@ -7,6 +7,14 @@ import java.io.File
 
 class ProtocolFixtureTest {
     @Test
+    fun bluetoothDiscoveryOnlyOffersNamedAkornDevices() {
+        assertEquals(true, AkornProtocol.isAkornDeviceName("Akorn-AutoKamado"))
+        assertEquals(false, AkornProtocol.isAkornDeviceName("Akorn-"))
+        assertEquals(false, AkornProtocol.isAkornDeviceName("Headphones"))
+        assertEquals(false, AkornProtocol.isAkornDeviceName(null))
+    }
+
+    @Test
     fun sharedProtocolFixturesMatchTheNormalizedContract() {
         val root = File(requireNotNull(System.getProperty("openAkornRoot")))
         val rows = File(root, "protocol-fixtures/status.csv").readLines().drop(1)

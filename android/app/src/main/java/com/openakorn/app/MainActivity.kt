@@ -2,6 +2,7 @@ package com.openakorn.app
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
@@ -58,6 +59,7 @@ class MainActivity : Activity() {
     private var bleScanCallback: ScanCallback? = null
     private var bleScanTimeout: Runnable? = null
     private var pendingBleName: String? = null
+    private var pendingBleDiscovery = false
     private var demoReading: TelemetryReading? = null
     @Volatile private var activeSource = "none"
 
@@ -200,6 +202,7 @@ class MainActivity : Activity() {
         findViewById<Button>(R.id.disconnectButton).setOnClickListener { stopCurrentTransport("Disconnected.") }
         findViewById<Button>(R.id.tcpButton).setOnClickListener { startTcpFromInput() }
         findViewById<Button>(R.id.bleButton).setOnClickListener { startBleFromInput() }
+        findViewById<Button>(R.id.bleDiscoverButton).setOnClickListener { requestBleDiscovery() }
         render()
     }
 
@@ -323,6 +326,127 @@ class MainActivity : Activity() {
         }
         pendingBleName = null
         startBle(name)
+    }
+
+    private fun requestBleDiscovery() {
+        pendingBleDiscovery = true
+        if (!hasBlePermissions()) {
+            requestPermissions(neededBlePermissions(), BLE_PERMISSION_REQUEST)
+            return
+        }
+        pendingBleDiscovery = false
+        discoverBleDevices()
+    }
+
+    private fun discoverBleDevices() {
+        stopTransportOnly()
+        activeSource = "ble"
+        val session = sessionGate.start()
+        store.connecting("ble")
+        showDetail("Scanning briefly for nearby AKORN devices. Nothing connects until you choose one.")
+        render()
+        val adapter = (getSystemService(BLUETOOTH_SERVICE) as BluetoothManager).adapter
+        if (adapter == null || !adapter.isEnabled) {
+            finishBleDiscovery(session, emptyMap(), "Bluetooth is unavailable or turned off.")
+            return
+        }
+        val scanner = adapter.bluetoothLeScanner
+        if (scanner == null) {
+            finishBleDiscovery(session, emptyMap(), "Bluetooth scanning is unavailable on this device.")
+            return
+        }
+        val found = linkedMapOf<String, BluetoothDevice>()
+        val callback = object : ScanCallback() {
+            override fun onScanResult(callbackType: Int, result: ScanResult) {
+                val name = try {
+                    result.device.name
+                } catch (_: SecurityException) {
+                    null
+                }
+                if (!AkornProtocol.isAkornDeviceName(name)) return
+                handler.post {
+                    if (isCurrentSession(session, "ble")) found.putIfAbsent(name!!, result.device)
+                }
+            }
+
+            override fun onScanFailed(errorCode: Int) {
+                handler.post {
+                    if (isCurrentSession(session, "ble")) {
+                        finishBleDiscovery(session, emptyMap(), "Bluetooth scan failed. Check Bluetooth settings and try again.")
+                    }
+                }
+            }
+        }
+        bleScanner = scanner
+        bleScanCallback = callback
+        try {
+            scanner.startScan(
+                null,
+                ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_POWER).build(),
+                callback,
+            )
+            val timeout = Runnable {
+                if (!isCurrentSession(session, "ble")) return@Runnable
+                finishBleDiscovery(session, found.toMap(), null)
+            }
+            bleScanTimeout = timeout
+            handler.postDelayed(timeout, BLE_DISCOVERY_TIMEOUT_MS)
+        } catch (_: SecurityException) {
+            finishBleDiscovery(session, emptyMap(), "Bluetooth permission was not granted.")
+        } catch (_: Exception) {
+            finishBleDiscovery(session, emptyMap(), "Bluetooth scanning could not start.")
+        }
+    }
+
+    private fun finishBleDiscovery(
+        session: Long,
+        devices: Map<String, BluetoothDevice>,
+        failure: String?,
+    ) {
+        if (!isCurrentSession(session, "ble")) return
+        stopBleScan()
+        sessionGate.invalidate()
+        activeSource = "none"
+        store.disconnect("ble", demo = false)
+        if (failure != null) {
+            showDetail(failure)
+            render()
+            return
+        }
+        if (devices.isEmpty()) {
+            showDetail("No nearby AKORN device was found. Check that it is advertising or enter its name manually.")
+            render()
+            return
+        }
+        showDetail("${devices.size} AKORN device${if (devices.size == 1) "" else "s"} found. Choose one to connect.")
+        render()
+        val names = devices.keys.toTypedArray()
+        val selectedDevices = devices.values.toList()
+        AlertDialog.Builder(this)
+            .setTitle("Choose an AKORN device")
+            .setItems(names) { _, index ->
+                bleNameInput.setText(names[index])
+                connectSelectedBleDevice(names[index], selectedDevices[index])
+            }
+            .setNegativeButton("Cancel") { _, _ ->
+                showDetail("No device connected. Choose a device or enter its name manually.")
+            }
+            .show()
+    }
+
+    private fun connectSelectedBleDevice(name: String, device: BluetoothDevice) {
+        if (!hasBlePermissions()) {
+            pendingBleName = name
+            requestPermissions(neededBlePermissions(), BLE_PERMISSION_REQUEST)
+            return
+        }
+        stopTransportOnly()
+        activeSource = "ble"
+        val session = sessionGate.start()
+        store.connecting("ble")
+        showDetail("Connecting to $name for read-only status. No pairing or provisioning is performed.")
+        render()
+        connectBle(device, session)
     }
 
     private fun startBle(name: String) {
@@ -543,10 +667,16 @@ class MainActivity : Activity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode != BLE_PERMISSION_REQUEST) return
         if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
+            if (pendingBleDiscovery) {
+                pendingBleDiscovery = false
+                discoverBleDevices()
+                return
+            }
             val name = pendingBleName
             pendingBleName = null
             name?.let { startBle(it) }
         } else {
+            pendingBleDiscovery = false
             pendingBleName = null
             showDetail("Bluetooth permission was denied; no device was scanned.")
             render()
@@ -599,6 +729,7 @@ class MainActivity : Activity() {
     companion object {
         private const val BLE_PERMISSION_REQUEST = 4801
         private const val BLE_SCAN_TIMEOUT_MS = 12_000L
+        private const val BLE_DISCOVERY_TIMEOUT_MS = 8_000L
         private const val BLE_CONNECT_TIMEOUT_MS = 15_000L
     }
 }
