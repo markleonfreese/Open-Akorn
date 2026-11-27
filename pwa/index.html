@@ -23,10 +23,10 @@
       <button id="installButton" class="install-button" type="button" hidden>Install app</button>
     </header>
 
-    <section class="connection" aria-live="polite">
+    <section class="connection">
       <span id="stateDot" class="state-dot" aria-hidden="true"></span>
       <div class="connection-copy">
-        <strong id="statusText">Waiting for local gateway</strong>
+        <strong id="statusText" role="status" aria-live="polite" aria-atomic="true">Waiting for local gateway</strong>
         <span id="detailText">Start the Open-Akorn monitor on the same computer.</span>
       </div>
       <span id="ageText" class="age">—</span>

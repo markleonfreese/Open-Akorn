@@ -1,7 +1,9 @@
 """PWA shell routes and cache policy are tested without an external service."""
 import json
+import re
 import threading
 import unittest
+from pathlib import Path
 from urllib.request import urlopen
 
 from monitor import Snapshot, server
@@ -44,6 +46,23 @@ class PwaTests(unittest.TestCase):
         self.assertEqual(payload['source'], 'tcp')
         self.assertFalse(payload['demo'])
         self.assertIsNone(payload['reading'])
+
+    def test_live_region_excludes_connection_age_that_changes_each_poll(self):
+        html = (Path(__file__).resolve().parents[1] / 'pwa' / 'index.html').read_text()
+        connection = re.search(
+            r'<section class="connection"(?P<attributes>[^>]*)>(?P<body>.*?)</section>',
+            html,
+            re.DOTALL,
+        )
+        self.assertIsNotNone(connection)
+        self.assertNotIn('aria-live', connection.group('attributes'))
+        self.assertEqual(connection.group('body').count('aria-live="polite"'), 1)
+        status = re.search(r'<strong id="statusText"(?P<attributes>[^>]*)>', connection.group('body'))
+        self.assertIsNotNone(status)
+        self.assertIn('role="status"', status.group('attributes'))
+        self.assertIn('aria-live="polite"', status.group('attributes'))
+        self.assertIn('aria-atomic="true"', status.group('attributes'))
+        self.assertNotRegex(status.group(0), r'id="ageText"')
 
 
 if __name__ == '__main__':

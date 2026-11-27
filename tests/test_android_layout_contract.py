@@ -108,6 +108,15 @@ class AndroidLayoutContractTests(unittest.TestCase):
         self.assertGreaterEqual(contrast_ratio('#FFFFFF', colors['akorn_green']), 4.5)
         self.assertGreaterEqual(contrast_ratio(colors['akorn_alarm'], colors['akorn_card']), 4.5)
 
+        css = (ROOT / 'pwa' / 'styles.css').read_text()
+        variables = dict(re.findall(r'--([\w-]+):\s*(#[\da-fA-F]{6})\s*;', css))
+        safety_note = re.search(r'^\.safety-note\s*\{(?P<rules>[^}]+)\}', css, re.MULTILINE)
+        safety_background = re.search(r'background:\s*(#[\da-fA-F]{6})', safety_note.group('rules'))
+        self.assertIsNotNone(safety_background)
+        for background in ('cream', 'paper', safety_background.group(1)):
+            with self.subTest(surface=background):
+                self.assertGreaterEqual(contrast_ratio(variables['muted'], variables.get(background, background)), 4.5)
+
 
 if __name__ == '__main__':
     unittest.main()

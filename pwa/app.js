@@ -10,9 +10,13 @@ function temperature(value) {
   return typeof value === 'number' && Number.isFinite(value) ? value.toFixed(1) : '—';
 }
 
+function setTextIfChanged(element, value) {
+  if (element.textContent !== value) element.textContent = value;
+}
+
 function setReading(currentId, targetId, probe) {
-  document.querySelector(`#${currentId}`).textContent = temperature(probe?.current_c);
-  document.querySelector(`#${targetId}`).textContent = `${temperature(probe?.target_c)} °C`;
+  setTextIfChanged(document.querySelector(`#${currentId}`), temperature(probe?.current_c));
+  setTextIfChanged(document.querySelector(`#${targetId}`), `${temperature(probe?.target_c)} °C`);
 }
 
 function renderStatus(payload) {
@@ -21,26 +25,26 @@ function renderStatus(payload) {
   const isDemo = payload?.demo === true || payload?.source === 'demo';
   demoBanner.hidden = !isDemo;
   stateDot.className = `state-dot${live ? ' live' : state === 'stale' || state === 'unavailable' || state === 'disconnected' ? ' problem' : ''}`;
-  statusText.textContent = isDemo ? 'SIMULATION' : live ? 'Live status received' : state === 'stale' ? 'Status is stale' : state === 'disconnected' ? 'Disconnected' : 'Waiting for local gateway';
-  detailText.textContent = isDemo
+  setTextIfChanged(statusText, isDemo ? 'SIMULATION' : live ? 'Live status received' : state === 'stale' ? 'Status is stale' : state === 'disconnected' ? 'Disconnected' : 'Waiting for local gateway');
+  setTextIfChanged(detailText, isDemo
     ? 'Fixture data only. No grill is connected.'
     : live
       ? 'Unverified hardware telemetry · monitoring only'
-      : 'No fresh reading is shown. Check the local monitor connection.';
-  ageText.textContent = live && typeof payload.age_seconds === 'number' ? `${Math.floor(payload.age_seconds)}s ago` : '—';
+      : 'No fresh reading is shown. Check the local monitor connection.');
+  setTextIfChanged(ageText, live && typeof payload.age_seconds === 'number' ? `${Math.floor(payload.age_seconds)}s ago` : '—');
 
   const reading = live ? payload.reading : null;
-  document.querySelector('#pitCurrent').textContent = temperature(reading?.pit?.current_c);
-  document.querySelector('#pitTarget').textContent = `${temperature(reading?.pit?.target_c)} °C`;
+  setTextIfChanged(document.querySelector('#pitCurrent'), temperature(reading?.pit?.current_c));
+  setTextIfChanged(document.querySelector('#pitTarget'), `${temperature(reading?.pit?.target_c)} °C`);
   setReading('probe1Current', 'probe1Target', reading?.probe1);
   setReading('probe2Current', 'probe2Target', reading?.probe2);
-  document.querySelector('#fanStatus').textContent = reading?.fan_mode
+  setTextIfChanged(document.querySelector('#fanStatus'), reading?.fan_mode
     ? reading.fan_mode === 'manual' && typeof reading.fan_percent === 'number'
       ? `Manual · ${reading.fan_percent}% reported`
       : `${reading.fan_mode} reported`
-    : 'Unknown';
+    : 'Unknown');
   const alarm = document.querySelector('#alarmStatus');
-  alarm.textContent = reading ? reading.alarm ? 'Active' : 'Not reported active' : 'Unknown';
+  setTextIfChanged(alarm, reading ? reading.alarm ? 'Active' : 'Not reported active' : 'Unknown');
   alarm.classList.toggle('alarm', Boolean(reading?.alarm));
 }
 
