@@ -94,7 +94,7 @@ class AndroidLayoutContractTests(unittest.TestCase):
         help_text = self.string_values['wifi_connection_help'].lower()
         self.assertIn('router', help_text)
         self.assertIn('already be connected', help_text)
-        self.assertIn('does not set it up', help_text)
+        self.assertIn('does not set up wi-fi', help_text)
 
     def test_dynamic_connection_alarm_and_fan_status_are_accessible_live_regions(self):
         ids = {
