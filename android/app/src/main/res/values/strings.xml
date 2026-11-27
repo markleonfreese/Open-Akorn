@@ -9,7 +9,15 @@
     <string name="target_unavailable">Target —</string>
     <string name="meat_probe_1">Meat probe 1</string>
     <string name="meat_probe_2">Meat probe 2</string>
-    <string name="fan_alarm_unknown">Reported fan: unknown  •  Alarm: unknown</string>
+    <string name="fan_mode">Fan mode</string>
+    <string name="alarm">Alarm</string>
+    <string name="unknown">Unknown</string>
+    <string name="fan_auto_reported">Auto (reported)</string>
+    <string name="manual">Manual</string>
+    <string name="fan_manual_reported">Manual %1$d%% (reported)</string>
+    <string name="fan_mode_reported">%1$s (reported)</string>
+    <string name="alarm_active">Active</string>
+    <string name="alarm_not_reported_active">Not reported active</string>
     <string name="connect_your_grill">Connect your grill</string>
     <string name="connection_intro">Try the demo first, or connect to your AKORN. One connection at a time.</string>
     <string name="try_demo">Try demo</string>

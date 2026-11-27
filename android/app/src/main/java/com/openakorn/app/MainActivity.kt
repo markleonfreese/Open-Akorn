@@ -47,7 +47,8 @@ class MainActivity : Activity() {
     private lateinit var probe1Target: TextView
     private lateinit var probe2Current: TextView
     private lateinit var probe2Target: TextView
-    private lateinit var fanAlarmText: TextView
+    private lateinit var fanStatusText: TextView
+    private lateinit var alarmStatusText: TextView
     private lateinit var ipInput: EditText
     private lateinit var bleNameInput: EditText
 
@@ -237,7 +238,8 @@ class MainActivity : Activity() {
         probe1Target = findViewById(R.id.probe1Target)
         probe2Current = findViewById(R.id.probe2Current)
         probe2Target = findViewById(R.id.probe2Target)
-        fanAlarmText = findViewById(R.id.fanAlarmText)
+        fanStatusText = findViewById(R.id.fanStatusText)
+        alarmStatusText = findViewById(R.id.alarmStatusText)
         ipInput = findViewById(R.id.ipInput)
         bleNameInput = findViewById(R.id.bleNameInput)
     }
@@ -701,7 +703,9 @@ class MainActivity : Activity() {
             probe1Target.text = "Target —"
             probe2Current.text = "— °C"
             probe2Target.text = "Target —"
-            fanAlarmText.text = "Reported fan: unknown  •  Alarm: unknown"
+            fanStatusText.setText(R.string.unknown)
+            alarmStatusText.setText(R.string.unknown)
+            alarmStatusText.setTextColor(getColor(R.color.akorn_ink))
             return
         }
         pitCurrent.text = celsius(reading.pit.currentC)
@@ -711,11 +715,15 @@ class MainActivity : Activity() {
         probe2Current.text = celsius(reading.probe2.currentC)
         probe2Target.text = "Target ${celsius(reading.probe2.targetC)}"
         val fan = when (reading.fanMode) {
-            "auto" -> "auto (reported)"
-            "manual" -> "manual${reading.fanPercent?.let { " $it%" } ?: ""} (reported)"
-            else -> "unknown"
+            "auto" -> getString(R.string.fan_auto_reported)
+            "manual" -> reading.fanPercent?.let {
+                getString(R.string.fan_manual_reported, it)
+            } ?: getString(R.string.fan_mode_reported, getString(R.string.manual))
+            else -> getString(R.string.unknown)
         }
-        fanAlarmText.text = "Reported fan: $fan  •  Alarm: ${if (reading.alarm) "ACTIVE" else "not reported active"}"
+        fanStatusText.text = fan
+        alarmStatusText.setText(if (reading.alarm) R.string.alarm_active else R.string.alarm_not_reported_active)
+        alarmStatusText.setTextColor(getColor(if (reading.alarm) R.color.akorn_alarm else R.color.akorn_ink))
     }
 
     private fun celsius(value: Double?): String = value?.let {
