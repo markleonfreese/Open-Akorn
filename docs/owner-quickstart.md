@@ -18,11 +18,11 @@ On Windows, use `py -3` in place of `python3` for each Python command. Open http
 
 ## 2. Install the Android preview
 
-A debug APK is available locally as `Open-Akorn-debug-0.1.0-27d9e56.apk` in the owner's Downloads folder. It is version `0.1.0` (`versionCode=1`), 2,800,408 bytes, SHA-256 `d2de828e2a7b5e670dfae0293f21ae0e178ba0703b15e9ae2b4ff432bfc6ae49`. Copy it to the owner-controlled Android phone/tablet (for example by USB), open it in Files, review Android's install prompt and install the package. This is a locally built debug preview, not a Play Store release. Start with **Try demo**. Remove it later through Android Settings → Apps → Open-Akorn → Uninstall.
+A debug APK is available locally as `Open-Akorn-debug-0.1.0-27d9e56.apk` in the owner's Downloads folder. It is version `0.1.0` (`versionCode=1`), 2,800,408 bytes, SHA-256 `d2de828e2a7b5e670dfae0293f21ae0e178ba0703b15e9ae2b4ff432bfc6ae49`, built from Android source commit `27d9e561a96c744e2ca69e742ff7be37de00bc43`. **This APK predates the latest transport callback fix in PR commit `85ae269`.** It remains suitable for a demo/layout preview; use a build from the latest PR head for connection testing. The latest CI run built the fixed app but did not upload an APK artifact. Copy an APK to the owner-controlled Android phone/tablet (for example by USB), open it in Files, review Android's install prompt and install the package. This is a debug preview, not a Play Store release. Start with **Try demo**. Remove it later through Android Settings → Apps → Open-Akorn → Uninstall.
 
 The APK supports Android 10/API 29 and newer. TCP asks for a manually entered private IPv4 address and has no runtime permission prompt. BLE requests Nearby devices when first used on Android 12+, or Location permission for BLE scanning on Android 10–11. Denying permission leaves BLE disconnected. The app disconnects when backgrounded; reopen it and tap Connect again. Use one connection at a time. The phone/tablet screen size, install flow, permissions and performance have not yet been checked on the target devices.
 
-To reproduce the APK instead, install JDK 17+ and Android SDK Platform 36, accept that platform's SDK licence in the SDK Manager, then build and run fixture tests:
+To build the latest PR source locally, install JDK 17+ and Android SDK Platform 36, accept that platform's SDK licence in the SDK Manager, then build and run fixture tests. On this Mac, Gradle could not build locally because no Android SDK is installed; no SDK licence was accepted.
 
 ```sh
 cd android
