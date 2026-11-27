@@ -129,6 +129,14 @@ class AndroidLayoutContractTests(unittest.TestCase):
             with self.subTest(surface=background):
                 self.assertGreaterEqual(contrast_ratio(variables['muted'], variables.get(background, background)), 4.5)
 
+    def test_pwa_reported_pill_keeps_readable_vertical_padding(self):
+        css = (ROOT / 'pwa' / 'styles.css').read_text()
+        pill = re.search(r'^\.reported-pill\s*\{(?P<rules>[^}]+)\}', css, re.MULTILINE)
+        self.assertIsNotNone(pill)
+        padding = re.search(r'padding:\s*(\d+)px\s+(\d+)px', pill.group('rules'))
+        self.assertIsNotNone(padding)
+        self.assertGreaterEqual(int(padding.group(1)), 8)
+
 
 if __name__ == '__main__':
     unittest.main()

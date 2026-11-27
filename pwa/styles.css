@@ -53,7 +53,7 @@ h2 { margin: 0; font-size: 19px; letter-spacing: -.02em; }
 .pit-panel { margin-top: 16px; padding: 20px clamp(17px, 5vw, 28px) 18px; background: var(--green); color: #fffdf7; border-color: var(--green); }
 .pit-panel .eyebrow { color: #c8d6c8; }
 .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.reported-pill { border: 1px solid #7f9b83; border-radius: 999px; padding: 5px 10px; color: #e4eee1; font-size: 11px; font-weight: 700; }
+.reported-pill { border: 1px solid #7f9b83; border-radius: 999px; padding: 8px 10px; color: #e4eee1; font-size: 11px; font-weight: 700; }
 .pit-reading { display: flex; align-items: baseline; gap: 8px; margin-top: 18px; }
 .pit-reading strong { font-size: clamp(66px, 16vw, 100px); line-height: .95; letter-spacing: -.07em; font-variant-numeric: tabular-nums; }
 .pit-reading span { font-size: 25px; color: #d8e3d5; }
