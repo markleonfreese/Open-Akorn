@@ -4,9 +4,20 @@
 
     <string name="not_connected">Not connected</string>
     <string name="connect_grill_for_temperatures">Connect your grill below to see temperatures.</string>
+    <string name="status_simulation">SIMULATION • %1$s</string>
+    <string name="status_live_monitor">LIVE MONITOR • %1$s</string>
+    <string name="status_idle">%1$s</string>
+    <string name="state_waiting">Waiting</string>
+    <string name="state_connecting">Connecting</string>
+    <string name="state_live">Live</string>
+    <string name="state_stale">Stale</string>
+    <string name="state_disconnected">Disconnected</string>
+    <string name="state_unavailable">Unavailable</string>
     <string name="grill_temperature">Grill temperature</string>
     <string name="temperature_unavailable">— °C</string>
+    <string name="temperature_celsius">%1$s °C</string>
     <string name="target_unavailable">Target —</string>
+    <string name="target_value">Target %1$s</string>
     <string name="meat_probe_1">Meat probe 1</string>
     <string name="meat_probe_2">Meat probe 2</string>
     <string name="fan_mode">Fan mode</string>

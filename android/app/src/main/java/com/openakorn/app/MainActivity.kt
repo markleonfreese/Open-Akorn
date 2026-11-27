@@ -687,8 +687,22 @@ class MainActivity : Activity() {
 
     private fun render() {
         val snapshot = store.snapshot(SystemClock.elapsedRealtime())
-        val prefix = if (snapshot.demo) "SIMULATION • " else if (snapshot.source == "none") "" else "LIVE MONITOR • "
-        statusText.text = prefix + snapshot.state.wireValue.replaceFirstChar { it.uppercase() }
+        val stateLabel = getString(
+            when (snapshot.state) {
+                LinkState.WAITING -> R.string.state_waiting
+                LinkState.CONNECTING -> R.string.state_connecting
+                LinkState.LIVE -> R.string.state_live
+                LinkState.STALE -> R.string.state_stale
+                LinkState.DISCONNECTED -> R.string.state_disconnected
+                LinkState.UNAVAILABLE -> R.string.state_unavailable
+            },
+        )
+        val statusFormat = when {
+            snapshot.demo -> R.string.status_simulation
+            snapshot.source == "none" -> R.string.status_idle
+            else -> R.string.status_live_monitor
+        }
+        statusText.text = getString(statusFormat, stateLabel)
         statusText.setTextColor(
             resources.getColor(
                 if (snapshot.state == LinkState.LIVE) R.color.akorn_green else R.color.akorn_amber,
@@ -697,23 +711,23 @@ class MainActivity : Activity() {
         )
         val reading = snapshot.reading
         if (reading == null) {
-            pitCurrent.text = "— °C"
-            pitTarget.text = "Target —"
-            probe1Current.text = "— °C"
-            probe1Target.text = "Target —"
-            probe2Current.text = "— °C"
-            probe2Target.text = "Target —"
+            pitCurrent.setText(R.string.temperature_unavailable)
+            pitTarget.setText(R.string.target_unavailable)
+            probe1Current.setText(R.string.temperature_unavailable)
+            probe1Target.setText(R.string.target_unavailable)
+            probe2Current.setText(R.string.temperature_unavailable)
+            probe2Target.setText(R.string.target_unavailable)
             fanStatusText.setText(R.string.unknown)
             alarmStatusText.setText(R.string.unknown)
             alarmStatusText.setTextColor(getColor(R.color.akorn_ink))
             return
         }
         pitCurrent.text = celsius(reading.pit.currentC)
-        pitTarget.text = "Target ${celsius(reading.pit.targetC)}"
+        pitTarget.text = getString(R.string.target_value, celsius(reading.pit.targetC))
         probe1Current.text = celsius(reading.probe1.currentC)
-        probe1Target.text = "Target ${celsius(reading.probe1.targetC)}"
+        probe1Target.text = getString(R.string.target_value, celsius(reading.probe1.targetC))
         probe2Current.text = celsius(reading.probe2.currentC)
-        probe2Target.text = "Target ${celsius(reading.probe2.targetC)}"
+        probe2Target.text = getString(R.string.target_value, celsius(reading.probe2.targetC))
         val fan = when (reading.fanMode) {
             "auto" -> getString(R.string.fan_auto_reported)
             "manual" -> reading.fanPercent?.let {
@@ -727,8 +741,8 @@ class MainActivity : Activity() {
     }
 
     private fun celsius(value: Double?): String = value?.let {
-        String.format(Locale.getDefault(), "%.1f °C", it)
-    } ?: "— °C"
+        getString(R.string.temperature_celsius, String.format(Locale.getDefault(), "%.1f", it))
+    } ?: getString(R.string.temperature_unavailable)
 
     private fun showDetail(message: String) {
         detailText.text = message

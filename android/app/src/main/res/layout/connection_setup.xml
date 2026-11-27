@@ -64,6 +64,7 @@
                 android:layout_height="52dp"
                 android:layout_weight="1"
                 android:hint="@string/grill_ip_address"
+                android:importantForAutofill="no"
                 android:inputType="textVisiblePassword"
                 android:singleLine="true"
                 android:textSize="15sp" />
@@ -108,6 +109,7 @@
                 android:layout_height="52dp"
                 android:layout_weight="1"
                 android:hint="@string/akorn_device_name"
+                android:importantForAutofill="no"
                 android:inputType="textVisiblePassword"
                 android:singleLine="true"
                 android:textSize="15sp" />
