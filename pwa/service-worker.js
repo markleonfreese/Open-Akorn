@@ -1,4 +1,4 @@
-const CACHE_NAME = 'open-akorn-shell-v4';
+const CACHE_NAME = 'open-akorn-shell-v5';
 const APP_SHELL = [
   '/',
   '/app.js',
