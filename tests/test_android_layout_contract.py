@@ -144,8 +144,9 @@ class AndroidLayoutContractTests(unittest.TestCase):
         rules = narrow.group('rules')
         self.assertIn('.brand .eyebrow { display: none; }', rules)
         self.assertIn('h1 { font-size: 22px; white-space: nowrap; }', rules)
-        self.assertIn('.install-button { flex: 0 0 auto;', rules)
+        self.assertIn('.install-button { flex: 0 0 auto; min-height: 48px;', rules)
         self.assertIn('white-space: nowrap;', rules)
+        self.assertRegex(css, r'\.install-button\s*\{[^}]*min-height:\s*48px')
 
 
 if __name__ == '__main__':

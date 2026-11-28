@@ -32,7 +32,7 @@ button { font: inherit; }
 .eyebrow { margin: 0 0 5px; color: var(--muted); font-size: 11px; font-weight: 750; letter-spacing: .11em; }
 h1 { margin: 0; font-size: clamp(24px, 5vw, 31px); line-height: 1.05; letter-spacing: -.035em; }
 h2 { margin: 0; font-size: 19px; letter-spacing: -.02em; }
-.install-button { min-height: 42px; border: 0; border-radius: 999px; padding: 0 16px; background: var(--green); color: white; font-weight: 700; }
+.install-button { min-height: 48px; border: 0; border-radius: 999px; padding: 0 16px; background: var(--green); color: white; font-weight: 700; }
 
 .connection, .pit-panel, .probe-card, .reported-status, .safety-note {
   border: 1px solid var(--line);
@@ -93,7 +93,7 @@ footer { padding: 17px 5px 5px; color: var(--muted); font-size: 11px; text-align
   .brand img { width: 40px; height: 40px; }
   .brand .eyebrow { display: none; }
   h1 { font-size: 22px; white-space: nowrap; }
-  .install-button { flex: 0 0 auto; min-height: 40px; padding: 0 12px; font-size: 13px; white-space: nowrap; }
+  .install-button { flex: 0 0 auto; min-height: 48px; padding: 0 12px; font-size: 13px; white-space: nowrap; }
   .probe-grid { gap: 8px; }
   .probe-card { padding: 13px 11px; }
   .connection { padding-left: 12px; padding-right: 12px; }
