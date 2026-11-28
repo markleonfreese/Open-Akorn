@@ -75,13 +75,14 @@ h2 { margin: 0; font-size: 19px; letter-spacing: -.02em; }
 .reported-status strong.alarm { color: var(--red); }
 
 .cook-timer { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 12px; padding: 16px; }
-.cook-timer .eyebrow { margin-bottom: 4px; }
 .timer-status { margin: 6px 0 0; font-size: 20px; font-weight: 750; font-variant-numeric: tabular-nums; }
 .timer-controls { display: grid; grid-template-columns: auto minmax(90px, 1fr) auto auto; align-items: center; gap: 8px; }
 .timer-controls label { font-size: 13px; font-weight: 650; }
 .timer-controls input { width: 100%; min-height: 48px; border: 1px solid var(--line); border-radius: 10px; padding: 0 10px; background: white; color: var(--ink); font: inherit; }
 .timer-controls button { min-height: 48px; border: 0; border-radius: 10px; padding: 0 14px; background: var(--green); color: white; font-weight: 700; }
-.timer-controls .secondary-button { border: 1px solid var(--line); background: transparent; color: var(--ink); }
+.timer-controls .secondary-button, .timer-notification-button { border: 1px solid var(--line); background: transparent; color: var(--ink); }
+.timer-notification-button { min-height: 48px; border-radius: 10px; padding: 0 14px; font: inherit; font-weight: 700; }
+.timer-notification-button:disabled { opacity: .65; }
 .timer-note { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.4; }
 .temperature-history { margin-top: 12px; padding: 16px; }
 .temperature-history > p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }

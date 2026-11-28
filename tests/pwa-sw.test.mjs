@@ -11,7 +11,7 @@ function loadWorker(fetchImpl = async () => ({ ok: true })) {
   const cache = { addAll: async (paths) => { cacheCalls.added = Array.from(paths); } };
   const caches = {
     open: async (name) => { cacheCalls.opened.push(name); return cache; },
-    keys: async () => ['open-akorn-shell-v1', 'open-akorn-shell-v2', 'open-akorn-shell-v4', 'other-cache'],
+    keys: async () => ['open-akorn-shell-v1', 'open-akorn-shell-v2', 'open-akorn-shell-v4', 'open-akorn-shell-v5', 'other-cache'],
     delete: async (name) => { cacheCalls.deleted.push(name); return true; },
     match: async () => { cacheCalls.matched += 1; return { source: 'cache' }; },
   };
@@ -30,7 +30,7 @@ test('install cache contains only static shell assets', async () => {
   let installPromise;
   listeners.install({ waitUntil: (promise) => { installPromise = promise; } });
   await installPromise;
-  assert.deepEqual(cacheCalls.opened, ['open-akorn-shell-v5']);
+  assert.deepEqual(cacheCalls.opened, ['open-akorn-shell-v6']);
   assert.ok(cacheCalls.added.includes('/'));
   assert.ok(cacheCalls.added.includes('/app.js'));
   assert.ok(!cacheCalls.added.some((path) => path.startsWith('/api/')));
@@ -41,7 +41,7 @@ test('activation removes obsolete app shell caches and keeps unrelated caches', 
   let activationPromise;
   listeners.activate({ waitUntil: (promise) => { activationPromise = promise; } });
   await activationPromise;
-  assert.deepEqual(cacheCalls.deleted, ['open-akorn-shell-v1', 'open-akorn-shell-v2', 'open-akorn-shell-v4']);
+  assert.deepEqual(cacheCalls.deleted, ['open-akorn-shell-v1', 'open-akorn-shell-v2', 'open-akorn-shell-v4', 'open-akorn-shell-v5']);
 });
 
 test('status request always uses network with no-store and never reads cache', async () => {

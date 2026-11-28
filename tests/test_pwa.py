@@ -3,6 +3,7 @@ import json
 import re
 import threading
 import unittest
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from urllib.request import urlopen
 
@@ -70,10 +71,12 @@ class PwaTests(unittest.TestCase):
         script = (root / 'pwa' / 'app.js').read_text()
         self.assertIn('id="cookTimerForm"', html)
         self.assertIn('id="cookTimerMinutes" type="number" min="1" max="1440"', html)
-        self.assertIn('This timer runs in this page only.', html)
+        self.assertIn('Optional browser alert requires permission', html)
         self.assertIn('if (!Number.isInteger(minutes) || minutes < 1 || minutes > 1440)', script)
         self.assertIn('cookTimerDeadline = Date.now() + minutes * 60_000', script)
         self.assertIn("cookTimerFinishedAnnounced ? 'Timer finished'", script)
+        self.assertIn('Notification.requestPermission()', script)
+        self.assertIn('registration.showNotification', script)
         self.assertIsNone(re.search(r'fetch\([^)]*(command|setTemp|fan|timer)', script, re.IGNORECASE))
 
     def test_graph_is_current_page_session_bounded_and_preserves_gaps(self):
@@ -97,9 +100,37 @@ class PwaTests(unittest.TestCase):
         self.assertIn('android:id="@+id/temperatureGraph"', layout)
         self.assertIn('android:accessibilityHeading="true"', layout)
         self.assertIn('no controller or alarm-command integration', timer.lower())
-        self.assertIn('runs in this app only', strings.lower())
+        self.assertIn('runs on this device', strings.lower())
         self.assertIn('class TemperatureHistory', history)
         self.assertIn('private val capacity: Int = 720', history)
+
+    def test_android_timer_notification_is_opt_in_local_and_inexact(self):
+        root = Path(__file__).resolve().parents[1]
+        manifest = ET.parse(root / 'android/app/src/main/AndroidManifest.xml').getroot()
+        permissions = {node.attrib.get('{http://schemas.android.com/apk/res/android}name') for node in manifest.findall('uses-permission')}
+        self.assertIn('android.permission.POST_NOTIFICATIONS', permissions)
+        self.assertNotIn('android.permission.SCHEDULE_EXACT_ALARM', permissions)
+        app = manifest.find('application')
+        receiver = app.find('receiver')
+        self.assertEqual(receiver.attrib.get('{http://schemas.android.com/apk/res/android}exported'), 'false')
+
+        notifications = (root / 'android/app/src/main/java/com/openakorn/app/CookTimerNotifications.kt').read_text()
+        activity = (root / 'android/app/src/main/java/com/openakorn/app/MainActivity.kt').read_text()
+        strings = (root / 'android/app/src/main/res/values/strings.xml').read_text().lower()
+        self.assertIn('setAndAllowWhileIdle', notifications)
+        self.assertNotIn('setExact', notifications)
+        self.assertIn('requestPermissions(', activity)
+        self.assertIn('post_notifications', activity.lower())
+        self.assertIn('reboot or force-stop can cancel', strings)
+        self.assertIn('does not indicate that food is safe', strings)
+
+    def test_pwa_timer_alert_control_has_large_touch_target_and_browser_only_copy(self):
+        root = Path(__file__).resolve().parents[1]
+        html = (root / 'pwa/index.html').read_text()
+        css = (root / 'pwa/styles.css').read_text()
+        self.assertIn('id="enableTimerNotifications"', html)
+        self.assertRegex(css, r'\.timer-notification-button\s*\{[^}]*min-height:\s*48px')
+        self.assertIn('missed if suspended or closed', html.lower())
 
 
 if __name__ == '__main__':

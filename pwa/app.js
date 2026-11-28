@@ -8,10 +8,12 @@ const cookTimerForm = document.querySelector('#cookTimerForm');
 const cookTimerMinutes = document.querySelector('#cookTimerMinutes');
 const cookTimerStatus = document.querySelector('#cookTimerStatus');
 const cancelCookTimer = document.querySelector('#cancelCookTimer');
+const enableTimerNotifications = document.querySelector('#enableTimerNotifications');
 const temperatureChart = document.querySelector('#temperatureChart');
 let installPrompt = null;
 let cookTimerDeadline = null;
 let cookTimerFinishedAnnounced = false;
+let timerNotificationsEnabled = typeof Notification !== 'undefined' && Notification.permission === 'granted';
 let temperatureSamples = [];
 let graphSource = null;
 let lastGraphSampleAt = 0;
@@ -22,6 +24,29 @@ function temperature(value) {
 
 function setTextIfChanged(element, value) {
   if (element.textContent !== value) element.textContent = value;
+}
+
+function renderTimerNotificationControl() {
+  if (!enableTimerNotifications) return;
+  const supported = typeof Notification !== 'undefined' && window.isSecureContext && 'serviceWorker' in navigator;
+  enableTimerNotifications.hidden = !supported;
+  if (!supported) return;
+  const permission = Notification.permission;
+  enableTimerNotifications.disabled = permission === 'denied' || timerNotificationsEnabled;
+  enableTimerNotifications.textContent = timerNotificationsEnabled
+    ? 'Timer alerts enabled'
+    : permission === 'denied' ? 'Notifications blocked in browser settings' : 'Enable timer alerts';
+}
+
+function notifyCookTimerFinished() {
+  if (!timerNotificationsEnabled || typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+  navigator.serviceWorker.ready
+    .then((registration) => registration.showNotification('Cook timer finished', {
+      body: 'Your local cook timer has finished. This does not indicate that food is safe.',
+      icon: '/icon-192.png',
+      tag: 'open-akorn-cook-timer',
+    }))
+    .catch(() => {});
 }
 
 function setReading(currentId, targetId, probe) {
@@ -40,6 +65,7 @@ function renderCookTimer(now = Date.now()) {
     if (!cookTimerFinishedAnnounced) {
       cookTimerFinishedAnnounced = true;
       cookTimerDeadline = null;
+      notifyCookTimerFinished();
     }
     return;
   }
@@ -197,11 +223,23 @@ cookTimerForm.addEventListener('submit', (event) => {
   renderCookTimer();
 });
 
+enableTimerNotifications.addEventListener('click', async () => {
+  if (typeof Notification === 'undefined') return;
+  try {
+    timerNotificationsEnabled = await Notification.requestPermission() === 'granted';
+  } catch (_error) {
+    timerNotificationsEnabled = false;
+  }
+  renderTimerNotificationControl();
+});
+
 cancelCookTimer.addEventListener('click', () => {
   cookTimerDeadline = null;
   cookTimerFinishedAnnounced = false;
   renderCookTimer();
 });
+
+renderTimerNotificationControl();
 
 window.addEventListener('beforeinstallprompt', (event) => {
   event.preventDefault();

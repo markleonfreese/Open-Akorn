@@ -36,8 +36,14 @@
     <string name="set_local_timer">Set local timer</string>
     <string name="cancel_timer">Cancel timer</string>
     <string name="timer_minutes_hint">Minutes (1–1440)</string>
-    <string name="local_timer_limit">Runs in this app only. It does not change grill settings and may not alert if the app is closed.</string>
+    <string name="local_timer_limit">Runs on this device and may notify if allowed. Android can delay alerts; reboot or force-stop can cancel them. It does not change grill settings.</string>
     <string name="timer_cancelled">Local timer cancelled</string>
+    <string name="timer_notification_permission_pending">Allow notifications to get a local timer alert. The timer still runs if you deny permission.</string>
+    <string name="timer_notification_permission_denied">Timer is running in the app, but notifications are disabled.</string>
+    <string name="timer_notification_title">Cook timer finished</string>
+    <string name="timer_notification_body">Your local cook timer has finished. This does not indicate that food is safe.</string>
+    <string name="timer_notification_channel">Cook timer</string>
+    <string name="timer_notification_channel_description">Local reminders when a cook timer expires. Not a food-safety alert.</string>
     <string name="temperature_graph">Temperature graph</string>
     <string name="graph_current_session_only">°C · fresh samples from this connection only; gaps stay visible.</string>
     <string name="graph_waiting">Temperature graph. Waiting for fresh samples.</string>

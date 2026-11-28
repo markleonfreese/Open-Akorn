@@ -76,7 +76,6 @@
 
     <section class="cook-timer" aria-labelledby="cookTimerHeading">
       <div>
-        <p class="eyebrow">LOCAL ONLY</p>
         <h2 id="cookTimerHeading">Cook timer</h2>
         <p id="cookTimerStatus" class="timer-status" role="status" aria-live="polite">No local timer running</p>
       </div>
@@ -86,7 +85,8 @@
         <button type="submit">Start timer</button>
         <button id="cancelCookTimer" type="button" class="secondary-button">Cancel</button>
       </form>
-      <p class="timer-note">This timer runs in this page only. It does not change grill settings and may not alert if the page is closed or suspended.</p>
+      <button id="enableTimerNotifications" class="timer-notification-button secondary-button" type="button" hidden>Enable timer alerts</button>
+      <p class="timer-note">Optional browser alert requires permission and this page to remain active. It may be delayed or missed if suspended or closed. No grill settings change.</p>
     </section>
 
     <section class="temperature-history" aria-labelledby="temperatureHistoryHeading">

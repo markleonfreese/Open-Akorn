@@ -59,6 +59,7 @@ class MainActivity : Activity() {
     private val cookTimer = LocalCookTimer()
     private val temperatureHistory = TemperatureHistory()
     private var timerFinishAnnounced = false
+    private var timerNotificationScheduled = false
     private lateinit var ipInput: EditText
     private lateinit var bleNameInput: EditText
 
@@ -224,7 +225,9 @@ class MainActivity : Activity() {
         findViewById<Button>(R.id.startCookTimerButton).setOnClickListener { promptCookTimer() }
         findViewById<Button>(R.id.cancelCookTimerButton).setOnClickListener {
             cookTimer.cancel()
+            CookTimerNotifications.cancel(this)
             timerFinishAnnounced = false
+            timerNotificationScheduled = false
             renderCookTimer()
             Toast.makeText(this, R.string.timer_cancelled, Toast.LENGTH_SHORT).show()
         }
@@ -789,6 +792,17 @@ class MainActivity : Activity() {
     @Deprecated("Permission callback is retained for API 29+ compatibility")
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == TIMER_NOTIFICATION_PERMISSION_REQUEST) {
+            val granted = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+            val now = SystemClock.elapsedRealtime()
+            val remaining = cookTimer.remainingMillis(now)
+            if (granted && remaining != null && remaining > 0L) {
+                timerNotificationScheduled = CookTimerNotifications.schedule(this, now + remaining)
+            } else if (!granted && remaining != null && remaining > 0L) {
+                Toast.makeText(this, R.string.timer_notification_permission_denied, Toast.LENGTH_LONG).show()
+            }
+            return
+        }
         if (requestCode != BLE_PERMISSION_REQUEST) return
         if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
             if (pendingBleDiscovery) {
@@ -895,8 +909,20 @@ class MainActivity : Activity() {
                     Toast.makeText(this, R.string.timer_minutes_hint, Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
-                cookTimer.start(minutes * 60_000L, SystemClock.elapsedRealtime())
+                val now = SystemClock.elapsedRealtime()
+                CookTimerNotifications.cancel(this)
+                cookTimer.start(minutes * 60_000L, now)
                 timerFinishAnnounced = false
+                timerNotificationScheduled = false
+                if (Build.VERSION.SDK_INT >= 33 && !CookTimerNotifications.canPost(this)) {
+                    showDetail(getString(R.string.timer_notification_permission_pending))
+                    requestPermissions(
+                        arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                        TIMER_NOTIFICATION_PERMISSION_REQUEST,
+                    )
+                } else {
+                    timerNotificationScheduled = CookTimerNotifications.schedule(this, now + minutes * 60_000L)
+                }
                 renderCookTimer()
             }
             .show()
@@ -913,7 +939,10 @@ class MainActivity : Activity() {
             cookTimerText.setTextIfChanged(getString(R.string.timer_finished))
             if (!timerFinishAnnounced) {
                 timerFinishAnnounced = true
-                Toast.makeText(this, R.string.timer_finished, Toast.LENGTH_LONG).show()
+                if (!timerNotificationScheduled || !CookTimerNotifications.canPost(this)) {
+                    Toast.makeText(this, R.string.timer_finished, Toast.LENGTH_LONG).show()
+                }
+                timerNotificationScheduled = false
             }
             return
         }
@@ -943,6 +972,7 @@ class MainActivity : Activity() {
 
     companion object {
         private const val BLE_PERMISSION_REQUEST = 4801
+        private const val TIMER_NOTIFICATION_PERMISSION_REQUEST = 4802
         private const val BLE_SCAN_TIMEOUT_MS = 12_000L
         private const val BLE_DISCOVERY_TIMEOUT_MS = 8_000L
         private const val BLE_CONNECT_TIMEOUT_MS = 15_000L

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'open-akorn-shell-v5';
+const CACHE_NAME = 'open-akorn-shell-v6';
 const APP_SHELL = [
   '/',
   '/app.js',
@@ -35,4 +35,12 @@ self.addEventListener('fetch', (event) => {
   if (APP_SHELL.includes(url.pathname)) {
     event.respondWith(caches.match(request).then((cached) => cached || fetch(request)));
   }
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+    const app = clients.find((client) => new URL(client.url).origin === self.location.origin);
+    return app ? app.focus() : self.clients.openWindow('/');
+  }));
 });
