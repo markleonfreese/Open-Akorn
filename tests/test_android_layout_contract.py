@@ -137,6 +137,16 @@ class AndroidLayoutContractTests(unittest.TestCase):
         self.assertIsNotNone(padding)
         self.assertGreaterEqual(int(padding.group(1)), 8)
 
+    def test_pwa_narrow_header_keeps_install_action_and_brand_on_one_line(self):
+        css = (ROOT / 'pwa' / 'styles.css').read_text()
+        narrow = re.search(r'@media\s*\(max-width:\s*370px\)\s*\{(?P<rules>[^}]+(?:\}[^}]+)*)\}', css)
+        self.assertIsNotNone(narrow)
+        rules = narrow.group('rules')
+        self.assertIn('.brand .eyebrow { display: none; }', rules)
+        self.assertIn('h1 { font-size: 22px; white-space: nowrap; }', rules)
+        self.assertIn('.install-button { flex: 0 0 auto;', rules)
+        self.assertIn('white-space: nowrap;', rules)
+
 
 if __name__ == '__main__':
     unittest.main()
