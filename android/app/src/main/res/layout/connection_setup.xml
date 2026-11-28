@@ -72,7 +72,7 @@
                 android:layout_weight="1"
                 android:hint="@string/grill_ip_address"
                 android:importantForAutofill="no"
-                android:inputType="textVisiblePassword"
+                android:inputType="textUri"
                 android:singleLine="true"
                 android:textSize="15sp" />
             <Button

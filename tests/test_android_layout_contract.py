@@ -96,6 +96,15 @@ class AndroidLayoutContractTests(unittest.TestCase):
         self.assertIn('already be connected', help_text)
         self.assertIn('does not set up wi-fi', help_text)
 
+    def test_manual_ipv4_field_uses_uri_keyboard_and_shows_example(self):
+        ip_field = next(
+            node for node in self.panels['connection_setup'].iter()
+            if node.attrib.get(ANDROID + 'id') == '@+id/ipInput'
+        )
+        self.assertEqual(ip_field.attrib[ANDROID + 'inputType'], 'textUri')
+        self.assertEqual(ip_field.attrib[ANDROID + 'hint'], '@string/grill_ip_address')
+        self.assertIn('192.168.1.50', self.string_values['grill_ip_address'])
+
     def test_dynamic_connection_alarm_and_fan_status_are_accessible_live_regions(self):
         ids = {
             node.attrib[ANDROID + 'id'].removeprefix('@+id/'): node

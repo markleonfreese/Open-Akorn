@@ -35,7 +35,7 @@
     <string name="disconnect">Disconnect</string>
     <string name="connect_by_wifi">Connect by Wi-Fi</string>
     <string name="wifi_connection_help">Use the device list in your router to find the grill IP address. The grill must already be connected to your Wi-Fi. Open-Akorn does not set up Wi-Fi.</string>
-    <string name="grill_ip_address">Grill IP address</string>
+    <string name="grill_ip_address">Grill IP, e.g. 192.168.1.50</string>
     <string name="connect">Connect</string>
     <string name="connect_by_bluetooth">Connect by Bluetooth</string>
     <string name="find_nearby_akorn_devices">Find nearby AKORN devices</string>
