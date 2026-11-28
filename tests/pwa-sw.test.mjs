@@ -25,13 +25,14 @@ function loadWorker(fetchImpl = async () => ({ ok: true })) {
   return { listeners, cacheCalls };
 }
 
-test('install cache contains only static shell assets', async () => {
+test('install cache contains static shell assets including session history, never telemetry', async () => {
   const { listeners, cacheCalls } = loadWorker();
   let installPromise;
   listeners.install({ waitUntil: (promise) => { installPromise = promise; } });
   await installPromise;
-  assert.deepEqual(cacheCalls.opened, ['open-akorn-shell-v6']);
+  assert.deepEqual(cacheCalls.opened, ['open-akorn-shell-v7']);
   assert.ok(cacheCalls.added.includes('/'));
+  assert.ok(cacheCalls.added.includes('/session-history.js'));
   assert.ok(cacheCalls.added.includes('/app.js'));
   assert.ok(!cacheCalls.added.some((path) => path.startsWith('/api/')));
 });

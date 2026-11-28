@@ -1,6 +1,7 @@
-const CACHE_NAME = 'open-akorn-shell-v6';
+const CACHE_NAME = 'open-akorn-shell-v7';
 const APP_SHELL = [
   '/',
+  '/session-history.js',
   '/app.js',
   '/styles.css',
   '/manifest.webmanifest',
