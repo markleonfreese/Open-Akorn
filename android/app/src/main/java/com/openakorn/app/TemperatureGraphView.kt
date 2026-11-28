@@ -27,7 +27,7 @@ class TemperatureGraphView @JvmOverloads constructor(
 
     fun submit(value: List<TemperatureSample>) {
         samples = value
-        contentDescription = accessibleSummary(value)
+        contentDescription = TemperatureGraphAccessibility.describe(value)
         invalidate()
     }
 
@@ -81,14 +81,6 @@ class TemperatureGraphView @JvmOverloads constructor(
             }
             if (started) canvas.drawPath(path, paint)
         }
-    }
-
-    private fun accessibleSummary(value: List<TemperatureSample>): String {
-        val latest = value.lastOrNull() ?: return "Temperature graph. No samples yet."
-        val readings = listOf("pit" to latest.pit, "probe 1" to latest.probe1, "probe 2" to latest.probe2)
-            .mapNotNull { (name, probe) -> probe?.currentC?.let { "$name ${"%.1f".format(it)} degrees Celsius" } }
-        return if (readings.isEmpty()) "Temperature graph. Latest sample has no available probes."
-        else "Temperature graph, current session. " + readings.joinToString(", ")
     }
 
     private fun dp(value: Float): Float = value * resources.displayMetrics.density

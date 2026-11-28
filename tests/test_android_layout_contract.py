@@ -160,6 +160,16 @@ class AndroidLayoutContractTests(unittest.TestCase):
                 }
                 self.assertTrue(labels.issubset(headings), f'missing headings: {labels - headings}')
 
+    def test_graph_accessibility_exposes_the_values_plotted_by_android(self):
+        graph_layout = (RES / 'layout' / 'monitor_dashboard.xml').read_text()
+        graph_view = (ROOT / 'android/app/src/main/java/com/openakorn/app/TemperatureGraphView.kt').read_text()
+        summary = (ROOT / 'android/app/src/main/java/com/openakorn/app/TemperatureGraphAccessibility.kt').read_text()
+
+        self.assertIn('android:importantForAccessibility="yes"', graph_layout)
+        self.assertIn('contentDescription = TemperatureGraphAccessibility.describe(value)', graph_view)
+        self.assertIn('probe?.currentC?.asGraphTemperature()', summary)
+        self.assertIn('probe?.targetC?.asGraphTemperature()', summary)
+
     def test_layout_strings_exist_and_primary_text_colors_meet_contrast_target(self):
         for panel in self.panels.values():
             self.assertLessEqual(referenced_names(panel, 'text', '@string/'), self.string_names)
