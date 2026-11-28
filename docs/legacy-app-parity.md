@@ -6,7 +6,7 @@ Updated 28 November 2026. This audit uses public vendor documentation, the publi
 
 The public [App Store listing](https://apps.apple.com/nz/app/char-griller/id1551650169) describes five core features: set the grill target, monitor food-probe temperatures, run a cook timer, graph grill/probe temperatures, and manage multiple Char-Griller grills from one phone. The listing also says the app used local Wi-Fi and Bluetooth and that v2.0.1 improved session graphing. The official [Australian how-to page](https://chargrilleraustralia.com.au/how-to-use-char-griller-app/) further documents choosing a connection, a timer UI, setting pit/probe targets, and status icons for the doors and fan. These are claims about the old app; they are not claims about Open-Akorn compatibility. We have not inspected or redistributed the proprietary APK, so features outside public descriptions remain unknown.
 
-The current Android/PWA build displays live or simulated pit/probe readings, reported targets, connection freshness, reported fan mode and alarm state. Android offers explicit TCP/Bluetooth setup, a configurable simulator, a local timer, a bounded current-session graph, and locally saved grill profiles. The PWA reads one loopback gateway at a time. Neither app has persistent cook history or an outbound grill command path. Door state is absent from the current shared status contract.
+The current Android/PWA build displays live or simulated pit/probe readings, reported targets, connection freshness, reported fan mode and alarm state. Android offers explicit TCP/Bluetooth setup, a configurable simulator, a local timer, a bounded graph, locally saved grill profiles and local cook-session history. The PWA reads one loopback gateway at a time and keeps bounded session history in that browser on that device. Neither app has an outbound grill command path. Door state is absent from the current shared status contract.
 
 | Legacy capability | Open-Akorn today | Safe parity path |
 | --- | --- | --- |
@@ -14,7 +14,7 @@ The current Android/PWA build displays live or simulated pit/probe readings, rep
 | Show current pit/probe targets | Implemented as reported values | Preserve as read-only observed state |
 | Change pit/probe targets | Not implemented | Requires completed supervised cold-grill acceptance and separate explicit authorization before any command implementation |
 | Cook timer | Implemented locally (1–1440 minutes), with no grill command. Android optionally requests notification permission and schedules an inexact local alarm; the PWA optionally shows a browser notification only when its page timer is running and the service worker is available. Android may delay alerts or lose them after reboot/force-stop; a suspended/closed PWA page can delay or miss them | Treat as a convenience timer only; use a separate reliable timer when unattended. Neither notification is a food-safety alarm |
-| Temperature graph | Implemented as a bounded in-memory °C graph for fresh samples in the current connection/page session; source changes reset it and missing samples break lines | No persistent session history, export, replay, zoom or pan yet |
+| Temperature graph and sessions | Current graph uses fresh °C samples; both apps keep up to 8 local sessions with at most 720 samples each, recording about once per minute. Old graphs can be reopened; the user can clear history. Simulations are excluded. Storage stays on the device and saves no grill address/name | Local session graph parity is implemented. No export, replay controls, zoom or pan. Browser storage may be cleared by the browser; app uninstall removes Android app data |
 | Multiple grills | Android stores up to 12 named Wi-Fi/Bluetooth profiles on the device. Selecting one only loads details; the user must tap Connect. Connecting closes the current transport first. PWA uses one gateway target. No simultaneous grill connections | Profiles contain only user label and private IPv4 or advertised BLE name; never store BLE MACs or connect automatically |
 | Door/fan status | Fan/alarm reported; door status unavailable in current contract | Show only fields the selected, verified model actually reports |
 | Remote/cloud access | Not implemented | Keep no-cloud. Consider a private authenticated gateway only as a separate approved design |
@@ -35,8 +35,8 @@ The pinned community repository is MIT-licensed and its README documents status 
 
 ## Remaining implementation order
 
-1. Validate profiles and manual one-at-a-time switching with the owner on the actual phone/grill; saved profiles do not establish that every firmware behaves identically.
-2. Consider local session persistence/export only with bounded storage, transparent retention and clear deletion controls.
+1. Validate profile switching, session recording, retention and deletion with the owner on the actual phone/grill; source/build tests do not establish phone storage behavior or firmware compatibility.
+2. Keep session export/replay, richer cook journals and recipe tracking as separate future scope.
 3. Reassess target-write parity only after the physical acceptance gate and a separate explicit authorization. Until then, retain read-only behavior and state this limitation in the UI.
 
 No account, cloud service, vendor endpoint emulation, automatic provisioning, fan override, or grill command is part of this parity work.

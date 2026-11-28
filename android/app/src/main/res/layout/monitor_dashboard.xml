@@ -251,6 +251,19 @@
                 android:text="@string/graph_legend"
                 android:textColor="@color/akorn_muted"
                 android:textSize="12sp" />
+            <Button
+                android:id="@+id/cookSessionsButton"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="10dp"
+                android:text="@string/view_cook_sessions" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/session_storage_note"
+                android:textColor="@color/akorn_muted"
+                android:textSize="12sp" />
         </LinearLayout>
 
     </LinearLayout>

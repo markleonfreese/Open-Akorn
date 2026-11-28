@@ -23,6 +23,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
@@ -33,6 +34,8 @@ import android.widget.TextView
 import android.widget.Toast
 import java.net.SocketTimeoutException
 import java.text.DecimalFormatSymbols
+import java.text.DateFormat
+import java.util.Date
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
@@ -43,6 +46,13 @@ class MainActivity : Activity() {
     private val sessionGate = TransportSessionGate()
     private val grillProfiles by lazy {
         LocalGrillProfiles(getSharedPreferences("open_akorn_local", MODE_PRIVATE))
+    }
+    private val cookSessions by lazy {
+        val preferences = getSharedPreferences("open_akorn_sessions", MODE_PRIVATE)
+        CookSessionHistory(
+            persist = { value -> preferences.edit().putString("history_v1", value).apply() },
+            encoded = preferences.getString("history_v1", null),
+        )
     }
     private val serviceUuid = UUID.fromString(AkornProtocol.STATUS_SERVICE_UUID)
     private val statusUuid = UUID.fromString(AkornProtocol.STATUS_CHARACTERISTIC_UUID)
@@ -228,6 +238,7 @@ class MainActivity : Activity() {
             saveCurrentProfile(GrillProfileTransport.BLUETOOTH)
         }
         findViewById<Button>(R.id.startCookTimerButton).setOnClickListener { promptCookTimer() }
+        findViewById<Button>(R.id.cookSessionsButton).setOnClickListener { showCookSessions() }
         findViewById<Button>(R.id.cancelCookTimerButton).setOnClickListener {
             cookTimer.cancel()
             CookTimerNotifications.cancel(this)
@@ -952,6 +963,11 @@ class MainActivity : Activity() {
         val now = SystemClock.elapsedRealtime()
         if (snapshot.state == LinkState.LIVE) temperatureHistory.record(snapshot.reading, now)
         else if (snapshot.state == LinkState.DISCONNECTED || snapshot.state == LinkState.STALE) temperatureHistory.record(null, now)
+        if (snapshot.state == LinkState.LIVE && !snapshot.demo && snapshot.reading != null) {
+            cookSessions.record(snapshot.source, snapshot.reading, System.currentTimeMillis(), demo = snapshot.demo)
+        } else {
+            cookSessions.finish(System.currentTimeMillis())
+        }
         temperatureGraph.submit(temperatureHistory.snapshot())
         val stateLabel = getString(
             when (snapshot.state) {
@@ -1010,6 +1026,72 @@ class MainActivity : Activity() {
         alarmStatusText.setTextIfChanged(alarmText)
         val alarmColor = getColor(if (reading.alarm) R.color.akorn_alarm else R.color.akorn_ink)
         if (alarmStatusText.currentTextColor != alarmColor) alarmStatusText.setTextColor(alarmColor)
+    }
+
+    private fun showCookSessions() {
+        val sessions = cookSessions.snapshot().asReversed()
+        val builder = AlertDialog.Builder(this)
+            .setTitle(R.string.cook_sessions)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setNeutralButton(R.string.clear_session_history) { _, _ -> confirmClearCookSessions() }
+        if (sessions.isEmpty()) {
+            builder.setMessage(R.string.no_saved_sessions)
+        } else {
+            builder.setItems(sessions.map(::cookSessionLabel).toTypedArray()) { _, index ->
+                showCookSession(sessions[index])
+            }
+        }
+        builder.show()
+    }
+
+    private fun cookSessionLabel(session: CookSession): String {
+        val started = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
+            .format(Date(session.startedAtEpochMillis))
+        val end = session.endedAtEpochMillis ?: System.currentTimeMillis()
+        val elapsed = (end - session.startedAtEpochMillis).coerceAtLeast(0L)
+        val minutes = elapsed / 60_000L
+        val duration = if (minutes >= 60) getString(R.string.session_duration_hours, minutes / 60, minutes % 60)
+            else getString(R.string.session_duration_minutes, minutes)
+        val transport = if (session.source == "tcp") getString(R.string.session_wifi) else getString(R.string.session_bluetooth)
+        val suffix = if (session.endedAtEpochMillis == null) getString(R.string.session_in_progress) else duration
+        return getString(R.string.session_list_item, started, transport, suffix, session.samples.size)
+    }
+
+    private fun showCookSession(session: CookSession) {
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            val padding = (16 * resources.displayMetrics.density).toInt()
+            setPadding(padding, 0, padding, 0)
+        }
+        content.addView(TextView(this).apply {
+            text = getString(R.string.session_graph_note)
+            textSize = 13f
+            setPadding(0, 0, 0, (8 * resources.displayMetrics.density).toInt())
+        })
+        content.addView(TemperatureGraphView(this).apply {
+            submit(session.samples)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                (220 * resources.displayMetrics.density).toInt(),
+            )
+        })
+        AlertDialog.Builder(this)
+            .setTitle(cookSessionLabel(session))
+            .setView(content)
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
+    }
+
+    private fun confirmClearCookSessions() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.clear_session_history)
+            .setMessage(R.string.clear_session_history_confirm)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(R.string.clear_history) { _, _ ->
+                cookSessions.clear()
+                Toast.makeText(this, R.string.session_history_cleared, Toast.LENGTH_SHORT).show()
+            }
+            .show()
     }
 
     private fun promptCookTimer() {

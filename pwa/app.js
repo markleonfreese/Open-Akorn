@@ -10,6 +10,14 @@ const cookTimerStatus = document.querySelector('#cookTimerStatus');
 const cancelCookTimer = document.querySelector('#cancelCookTimer');
 const enableTimerNotifications = document.querySelector('#enableTimerNotifications');
 const temperatureChart = document.querySelector('#temperatureChart');
+const temperatureGraphNote = document.querySelector('#temperatureGraphNote');
+const sessionList = document.querySelector('#sessionList');
+const clearSessionHistory = document.querySelector('#clearSessionHistory');
+const showLiveGraph = document.querySelector('#showLiveGraph');
+const sessionStorageNote = document.querySelector('#sessionStorageNote');
+let sessionStorage = null;
+try { sessionStorage = window.localStorage; } catch (_error) {}
+const cookSessions = window.OpenAkornSessionHistory.createSessionHistory(sessionStorage);
 let installPrompt = null;
 let cookTimerDeadline = null;
 let cookTimerFinishedAnnounced = false;
@@ -17,6 +25,7 @@ let timerNotificationsEnabled = typeof Notification !== 'undefined' && Notificat
 let temperatureSamples = [];
 let graphSource = null;
 let lastGraphSampleAt = 0;
+let selectedSessionId = null;
 
 function temperature(value) {
   return typeof value === 'number' && Number.isFinite(value) ? value.toFixed(1) : '—';
@@ -97,6 +106,58 @@ function recordTemperatureSample(payload, now = Date.now()) {
   lastGraphSampleAt = now;
 }
 
+function archiveGraphSamples() {
+  const selected = cookSessions.list().find((session) => session.id === selectedSessionId);
+  if (!selected) return null;
+  return selected.samples.map((sample) => ({
+    time: selected.startedAt + sample.offsetMs,
+    values: sample.values,
+  }));
+}
+
+function renderCookSessions() {
+  if (!sessionList) return;
+  const sessions = cookSessions.list().reverse();
+  if (selectedSessionId && !sessions.some((session) => session.id === selectedSessionId)) {
+    selectedSessionId = null;
+    temperatureGraphNote.textContent = '°C · fresh samples from this connection. Gaps stay visible.';
+    showLiveGraph.hidden = true;
+  }
+  if (!cookSessions.storageAvailable()) {
+    sessionStorageNote.textContent = 'Browser storage is unavailable. Sessions remain in page memory only and will be lost when the page closes.';
+  }
+  sessionList.replaceChildren();
+  if (sessions.length === 0) {
+    const empty = document.createElement('li');
+    empty.textContent = 'No recorded sessions yet. A session begins when fresh real grill readings arrive.';
+    sessionList.append(empty);
+  } else {
+    for (const session of sessions) {
+      const item = document.createElement('li');
+      const button = document.createElement('button');
+      const started = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+        .format(new Date(session.startedAt));
+      const elapsed = Math.max(0, (session.endedAt ?? Date.now()) - session.startedAt);
+      const minutes = Math.floor(elapsed / 60_000);
+      const duration = minutes >= 60 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m` : `${minutes} min`;
+      const connection = session.source === 'tcp' ? 'Wi-Fi' : 'Bluetooth';
+      button.type = 'button';
+      button.textContent = `View graph · ${started} · ${connection} · ${duration} · ${session.samples.length} samples`;
+      button.setAttribute('aria-pressed', String(selectedSessionId === session.id));
+      button.addEventListener('click', () => {
+        selectedSessionId = session.id;
+        temperatureGraphNote.textContent = 'Archived cook graph · samples about once a minute. Gaps stay visible.';
+        showLiveGraph.hidden = false;
+        renderCookSessions();
+        drawTemperatureChart();
+      });
+      item.append(button);
+      sessionList.append(item);
+    }
+  }
+  clearSessionHistory.disabled = sessions.length === 0;
+}
+
 function drawTemperatureChart() {
   const canvas = temperatureChart;
   const context = canvas.getContext('2d');
@@ -121,14 +182,18 @@ function drawTemperatureChart() {
   }
   context.fillText('older', left, height - 5);
   context.fillText('now', right - 22, height - 5);
-  if (temperatureSamples.length < 2) {
+  const archivedSamples = archiveGraphSamples();
+  const graphSamples = archivedSamples || temperatureSamples;
+  if (graphSamples.length < 2) {
     context.fillText('Waiting for fresh samples', left + 8, top + 24);
-    canvas.setAttribute('aria-label', 'Temperature graph. Waiting for fresh samples.');
+    canvas.setAttribute('aria-label', archivedSamples
+      ? 'Saved cook temperature graph. Fewer than two samples were recorded.'
+      : 'Temperature graph. Waiting for fresh samples.');
     return;
   }
 
-  const start = temperatureSamples[0].time;
-  const end = Math.max(start + 1, temperatureSamples[temperatureSamples.length - 1].time);
+  const start = graphSamples[0].time;
+  const end = Math.max(start + 1, graphSamples[graphSamples.length - 1].time);
   const definitions = [
     ['pit', 'current', '#244a35', false], ['probe1', 'current', '#a56619', false], ['probe2', 'current', '#356a86', false],
     ['pit', 'target', '#244a35', true], ['probe1', 'target', '#a56619', true], ['probe2', 'target', '#356a86', true],
@@ -138,9 +203,10 @@ function drawTemperatureChart() {
     context.setLineDash(dashed ? [5, 4] : []);
     context.beginPath();
     let started = false; let previousTime = null;
-    for (const sample of temperatureSamples) {
+    const maximumGapMs = archivedSamples ? 120_000 : 15_000;
+    for (const sample of graphSamples) {
       const value = sample.values[channel][kind];
-      if (!Number.isFinite(value) || value < 0 || value > 400 || (previousTime !== null && sample.time - previousTime > 15_000)) {
+      if (!Number.isFinite(value) || value < 0 || value > 400 || (previousTime !== null && sample.time - previousTime > maximumGapMs)) {
         if (started) context.stroke();
         context.beginPath(); started = false;
       } else {
@@ -153,9 +219,9 @@ function drawTemperatureChart() {
     if (started) context.stroke();
   }
   context.setLineDash([]);
-  const latest = temperatureSamples[temperatureSamples.length - 1].values;
+  const latest = graphSamples[graphSamples.length - 1].values;
   const summary = ['pit', 'probe1', 'probe2'].map((key) => `${key} ${latest[key].current === null ? 'unavailable' : `${latest[key].current.toFixed(1)} °C`}`).join(', ');
-  canvas.setAttribute('aria-label', `Temperature graph, current page session. ${summary}. Dashed lines show reported targets.`);
+  canvas.setAttribute('aria-label', `${archivedSamples ? 'Saved cook' : 'Temperature'} graph, ${archivedSamples ? 'archived session' : 'current page session'}. ${summary}. Dashed lines show reported targets.`);
 }
 
 function renderStatus(payload) {
@@ -197,10 +263,12 @@ async function poll() {
     if (payload.schema_version !== 1) throw new Error('unsupported status schema');
     renderStatus(payload);
     recordTemperatureSample(payload);
+    if (cookSessions.record(payload)) renderCookSessions();
   } catch (_error) {
     const payload = { state: 'unavailable', reading: null, demo: false, source: graphSource || 'unknown' };
     renderStatus(payload);
     recordTemperatureSample(payload);
+    if (cookSessions.record(payload)) renderCookSessions();
   } finally {
     clearTimeout(timeout);
     renderCookTimer();
@@ -239,6 +307,24 @@ cancelCookTimer.addEventListener('click', () => {
   renderCookTimer();
 });
 
+clearSessionHistory.addEventListener('click', () => {
+  if (!window.confirm('Delete all cook sessions saved in this browser on this device?')) return;
+  cookSessions.clear();
+  selectedSessionId = null;
+  temperatureGraphNote.textContent = '°C · fresh samples from this connection. Gaps stay visible.';
+  showLiveGraph.hidden = true;
+  renderCookSessions();
+  drawTemperatureChart();
+});
+
+showLiveGraph.addEventListener('click', () => {
+  selectedSessionId = null;
+  temperatureGraphNote.textContent = '°C · fresh samples from this connection. Gaps stay visible.';
+  showLiveGraph.hidden = true;
+  renderCookSessions();
+  drawTemperatureChart();
+});
+
 renderTimerNotificationControl();
 
 window.addEventListener('beforeinstallprompt', (event) => {
@@ -260,5 +346,7 @@ if ('serviceWorker' in navigator && window.isSecureContext) {
 }
 
 window.addEventListener('resize', drawTemperatureChart);
+window.addEventListener('pagehide', () => cookSessions.finish());
 
+renderCookSessions();
 poll();

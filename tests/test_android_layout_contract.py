@@ -170,6 +170,27 @@ class AndroidLayoutContractTests(unittest.TestCase):
         self.assertIn('probe?.currentC?.asGraphTemperature()', summary)
         self.assertIn('probe?.targetC?.asGraphTemperature()', summary)
 
+    def test_android_cook_sessions_are_local_bounded_and_exclude_demo(self):
+        dashboard = self.panels['monitor_dashboard']
+        button = next(
+            node for node in dashboard.iter('Button')
+            if node.attrib.get(ANDROID + 'id') == '@+id/cookSessionsButton'
+        )
+        self.assertGreaterEqual(int(button.attrib[ANDROID + 'layout_height'].removesuffix('dp')), 48)
+        self.assertIn('session_storage_note', self.string_names)
+        self.assertIn('clear_session_history', self.string_names)
+
+        activity = (ROOT / 'android/app/src/main/java/com/openakorn/app/MainActivity.kt').read_text()
+        model = (ROOT / 'android/app/src/main/java/com/openakorn/app/CookSessionHistory.kt').read_text()
+        self.assertIn('!snapshot.demo', activity)
+        self.assertIn('cookSessions.record(snapshot.source', activity)
+        self.assertIn('demo: Boolean', model)
+        self.assertIn('if (demo)', model)
+        self.assertIn('const val MAX_SESSIONS = 8', model)
+        self.assertIn('const val MAX_SAMPLES_PER_SESSION = 720', model)
+        self.assertIn('const val SAMPLE_INTERVAL_MILLIS = 60_000L', model)
+        self.assertIn('preferences.edit().putString("history_v1", value).apply()', activity)
+
     def test_native_simulator_can_configure_probe_alarm_and_connection_states(self):
         setup = self.panels['connection_setup']
         button = next(

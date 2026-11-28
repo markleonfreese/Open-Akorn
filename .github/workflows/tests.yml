@@ -38,7 +38,7 @@ jobs:
       - name: Compile Python
         run: python -m compileall -q monitor.py ha_mqtt.py tests
       - name: Verify PWA cache boundaries
-        run: node --test tests/pwa-sw.test.mjs
+        run: node --test tests/pwa-sw.test.mjs tests/session-history.test.cjs
 
   android:
     runs-on: ubuntu-latest

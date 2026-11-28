@@ -86,16 +86,35 @@ class PwaTests(unittest.TestCase):
         self.assertIn('registration.showNotification', script)
         self.assertIsNone(re.search(r'fetch\([^)]*(command|setTemp|fan|timer)', script, re.IGNORECASE))
 
-    def test_graph_is_current_page_session_bounded_and_preserves_gaps(self):
+    def test_graph_is_bounded_and_preserves_gaps(self):
         root = Path(__file__).resolve().parents[1]
         html = (root / 'pwa' / 'index.html').read_text()
         script = (root / 'pwa' / 'app.js').read_text()
         self.assertIn('id="temperatureChart"', html)
-        self.assertIn('°C · fresh samples from this page session. Gaps stay visible.', html)
+        self.assertIn('°C · fresh samples from this connection. Gaps stay visible.', html)
         self.assertIn('if (graphSource !== null && source !== graphSource) temperatureSamples = []', script)
         self.assertIn('if (temperatureSamples.length > 720) temperatureSamples.shift()', script)
-        self.assertIn('sample.time - previousTime > 15_000', script)
+        self.assertIn('const maximumGapMs = archivedSamples ? 120_000 : 15_000', script)
+        self.assertIn('sample.time - previousTime > maximumGapMs', script)
         self.assertIn('Number.isFinite(item?.current_c)', script)
+
+    def test_pwa_archives_bounded_real_sessions_only_in_browser_storage(self):
+        root = Path(__file__).resolve().parents[1]
+        html = (root / 'pwa' / 'index.html').read_text()
+        script = (root / 'pwa' / 'app.js').read_text()
+        history = (root / 'pwa' / 'session-history.js').read_text()
+        self.assertLess(html.index('/session-history.js'), html.index('/app.js'))
+        self.assertIn('id="sessionList"', html)
+        self.assertIn('id="clearSessionHistory"', html)
+        self.assertIn("'open-akorn-cook-sessions-v1'", history)
+        self.assertIn('const MAX_SESSIONS = 8', history)
+        self.assertIn('const MAX_SAMPLES = 720', history)
+        self.assertIn('const SAMPLE_INTERVAL_MS = 60_000', history)
+        self.assertIn("payload?.state !== 'live'", history)
+        self.assertIn("!['tcp', 'ble'].includes(session.source)", history)
+        self.assertIn('cookSessions.record(payload)', script)
+        self.assertIn('window.confirm(', script)
+        self.assertIsNone(re.search(r'fetch\([^)]*(session|history)', script, re.IGNORECASE))
 
     def test_android_timer_and_graph_are_local_and_accessible(self):
         root = Path(__file__).resolve().parents[1]

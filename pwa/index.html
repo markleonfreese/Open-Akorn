@@ -90,7 +90,7 @@
 
     <section class="temperature-history" aria-labelledby="temperatureHistoryHeading">
       <h2 id="temperatureHistoryHeading">Temperature graph</h2>
-      <p>°C · fresh samples from this page session. Gaps stay visible.</p>
+      <p id="temperatureGraphNote">°C · fresh samples from this connection. Gaps stay visible.</p>
       <canvas id="temperatureChart" height="210" role="img" aria-label="Temperature graph. Waiting for fresh samples."></canvas>
       <ul class="chart-legend" aria-label="Graph lines">
         <li><span class="legend-pit"></span>Pit</li>
@@ -100,12 +100,25 @@
       </ul>
     </section>
 
+    <section class="session-history" aria-labelledby="sessionHistoryHeading">
+      <div class="panel-heading">
+        <h2 id="sessionHistoryHeading">Cook sessions</h2>
+        <button id="showLiveGraph" type="button" class="secondary-button" hidden>Show live graph</button>
+      </div>
+      <p id="sessionStorageNote">Saved in this browser on this device only. Fresh real readings only; simulation is excluded. Keeps up to 8 sessions with samples about once a minute. No grill address or name is saved.</p>
+      <ul id="sessionList" aria-label="Saved cook sessions">
+        <li>No recorded sessions yet. A session begins when fresh real grill readings arrive.</li>
+      </ul>
+      <button id="clearSessionHistory" type="button" class="secondary-button">Clear local history</button>
+    </section>
+
     <aside class="safety-note">
       <strong>Monitoring only</strong>
       <p>The factory controller remains responsible for temperature regulation and safety. Do not use this page to make safety decisions.</p>
     </aside>
     <footer>Local gateway only · no account or cloud · live status is never cached</footer>
   </main>
+  <script src="/session-history.js" defer></script>
   <script src="/app.js" defer></script>
 </body>
 </html>
