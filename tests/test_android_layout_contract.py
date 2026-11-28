@@ -88,6 +88,24 @@ class AndroidLayoutContractTests(unittest.TestCase):
                     self.assertTrue(value.endswith('dp'), f'{node.tag} height must use dp')
                     self.assertGreaterEqual(float(value[:-2]), 48)
 
+    def test_demo_and_disconnect_buttons_use_borderless_button_bar_styles(self):
+        setup = self.panels['connection_setup']
+        button_bar = next(
+            node for node in setup.iter()
+            if node.attrib.get(ANDROID + 'orientation') == 'horizontal'
+            and {child.attrib.get(ANDROID + 'id') for child in node}.issuperset(
+                {'@+id/demoButton', '@+id/disconnectButton'}
+            )
+        )
+        self.assertEqual(button_bar.attrib['style'], '?android:attr/buttonBarStyle')
+        for button_id in ('demoButton', 'disconnectButton'):
+            with self.subTest(button=button_id):
+                button = next(
+                    node for node in button_bar
+                    if node.attrib.get(ANDROID + 'id') == f'@+id/{button_id}'
+                )
+                self.assertEqual(button.attrib['style'], '?android:attr/buttonBarButtonStyle')
+
     def test_wifi_setup_explains_manual_ip_and_existing_network_requirement(self):
         setup_texts = [node.attrib.get(ANDROID + 'text') for node in self.panels['connection_setup'].iter()]
         self.assertIn('@string/wifi_connection_help', setup_texts)
