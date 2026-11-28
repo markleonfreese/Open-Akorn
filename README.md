@@ -10,7 +10,7 @@ Open http://127.0.0.1:8080 on the same computer. The demo uses a shared syntheti
 
 ## Android phone and tablet preview
 
-The native Kotlin app supports Android 10/API 29 and newer. It has a shared-fixture demo plus explicit read-only TCP and Bluetooth connections. It does not embed Python, use a WebView, scan networks, run in the background, or send controller commands. TCP accepts a manually entered private IPv4 address. BLE requires the exact observed `Akorn-*` name and subscribes to status notifications only.
+The native Kotlin app supports Android 10/API 29 and newer. It has a shared-fixture demo plus explicit read-only TCP and Bluetooth connections. Android can save up to 12 locally named connection profiles; selecting a profile loads its details but never connects automatically, and connecting replaces the current session. Profiles are not backed up and do not store Bluetooth addresses. The app does not embed Python, use a WebView, scan networks, run in the background, or send controller commands. TCP accepts a manually entered private IPv4 address. BLE requires the exact observed `Akorn-*` name and subscribes to status notifications only.
 
 Install a JDK 17 or newer and Android SDK Platform 36, and accept the SDK license in the SDK Manager. Build and run the Android unit tests with:
 
