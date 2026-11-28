@@ -6,7 +6,7 @@ Updated 28 November 2026. This audit uses public vendor documentation, the publi
 
 The public [App Store listing](https://apps.apple.com/nz/app/char-griller/id1551650169) describes five core features: set the grill target, monitor food-probe temperatures, run a cook timer, graph grill/probe temperatures, and manage multiple Char-Griller grills from one phone. The official [Australian how-to page](https://chargrilleraustralia.com.au/how-to-use-char-griller-app/) further documents choosing a connection, a timer UI, setting pit/probe targets, and status icons for the doors and fan. These are claims about the old app; they are not claims about Open-Akorn compatibility.
 
-The current Open-Akorn Android/PWA build displays live or simulated pit/probe readings, reported targets, connection freshness, reported fan mode and alarm state. It offers explicit TCP/Bluetooth connection setup and a simulator. It has no cook timer, temperature history chart, saved grill list, local cook history or outbound grill command path. It does not show door state because the currently shared Auto-Akorn status contract does not include it.
+The current Android/PWA build displays live or simulated pit/probe readings, reported targets, connection freshness, reported fan mode and alarm state. Android offers explicit TCP/Bluetooth setup, a simulator, a local timer, a bounded current-session graph, and locally saved grill profiles. The PWA reads one loopback gateway at a time. Neither app has persistent cook history or an outbound grill command path. Door state is absent from the current shared status contract.
 
 | Legacy capability | Open-Akorn today | Safe parity path |
 | --- | --- | --- |
@@ -15,7 +15,7 @@ The current Open-Akorn Android/PWA build displays live or simulated pit/probe re
 | Change pit/probe targets | Not implemented | Requires completed supervised cold-grill acceptance and separate explicit authorization before any command implementation |
 | Cook timer | Implemented as a local page/app timer (1–1440 minutes), with no grill command. It does not guarantee an alert if the page/app is closed or suspended | Treat as a convenience timer only; use a separate reliable timer when unattended |
 | Temperature graph | Implemented as a bounded in-memory °C graph for fresh samples in the current connection/page session; source changes reset it and missing samples break lines | No persistent session history, export, replay, zoom or pan yet |
-| Multiple grills | One selected connection at a time; no saved grill manager | Add locally named profiles and explicit switching only after confirming controller single-client behavior; never connect concurrently |
+| Multiple grills | Android stores up to 12 named Wi-Fi/Bluetooth profiles on the device. Selecting one only loads details; the user must tap Connect. Connecting closes the current transport first. PWA uses one gateway target. No simultaneous grill connections | Profiles contain only user label and private IPv4 or advertised BLE name; never store BLE MACs or connect automatically |
 | Door/fan status | Fan/alarm reported; door status unavailable in current contract | Show only fields the selected, verified model actually reports |
 | Remote/cloud access | Not implemented | Keep no-cloud. Consider a private authenticated gateway only as a separate approved design |
 
@@ -35,7 +35,7 @@ The pinned community repository is MIT-licensed and its README documents status 
 
 ## Remaining implementation order
 
-1. Add locally named grill profiles and explicit one-at-a-time switching if verified model behavior supports it.
+1. Validate profiles and manual one-at-a-time switching with the owner on the actual phone/grill; saved profiles do not establish that every firmware behaves identically.
 2. Consider local session persistence/export only with bounded storage, transparent retention and clear deletion controls.
 3. Reassess target-write parity only after the physical acceptance gate and a separate explicit authorization. Until then, retain read-only behavior and state this limitation in the UI.
 

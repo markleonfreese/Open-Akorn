@@ -45,6 +45,20 @@
                 android:text="@string/disconnect" />
         </LinearLayout>
 
+        <Button
+            android:id="@+id/savedGrillsButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="10dp"
+            android:text="@string/saved_grills" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/saved_grills_help"
+            android:textColor="@color/akorn_muted"
+            android:textSize="13sp" />
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -84,6 +98,12 @@
                 android:layout_marginStart="8dp"
                 android:text="@string/connect" />
         </LinearLayout>
+        <Button
+            android:id="@+id/saveWifiProfileButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="6dp"
+            android:text="@string/save_wifi_profile" />
 
         <TextView
             android:layout_width="match_parent"
@@ -130,6 +150,12 @@
                 android:layout_marginStart="8dp"
                 android:text="@string/connect" />
         </LinearLayout>
+        <Button
+            android:id="@+id/saveBluetoothProfileButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="6dp"
+            android:text="@string/save_bluetooth_profile" />
 
         <TextView
             android:layout_width="match_parent"

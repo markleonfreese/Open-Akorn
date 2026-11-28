@@ -105,6 +105,30 @@ class AndroidLayoutContractTests(unittest.TestCase):
         self.assertEqual(ip_field.attrib[ANDROID + 'hint'], '@string/grill_ip_address')
         self.assertIn('192.168.1.50', self.string_values['grill_ip_address'])
 
+    def test_saved_grill_profiles_are_visible_local_only_and_do_not_auto_connect(self):
+        setup = self.panels['connection_setup']
+        ids = {
+            node.attrib[ANDROID + 'id'].removeprefix('@+id/')
+            for node in setup.iter()
+            if ANDROID + 'id' in node.attrib
+        }
+        self.assertTrue({'savedGrillsButton', 'saveWifiProfileButton', 'saveBluetoothProfileButton'}.issubset(ids))
+        self.assertIn('on this device only', self.string_values['saved_grills_help'].lower())
+        self.assertIn('tap connect', self.string_values['saved_grills_help'].lower())
+
+        activity = (ROOT / 'android/app/src/main/java/com/openakorn/app/MainActivity.kt').read_text()
+        load_profile = re.search(
+            r'private fun loadGrillProfile\(profile: GrillProfile\) \{(?P<body>.*?)\n    \}',
+            activity,
+            re.DOTALL,
+        )
+        self.assertIsNotNone(load_profile)
+        self.assertNotRegex(load_profile.group('body'), r'\b(startTcp|startBle|connectBle)\(')
+
+        manifest = parse(ROOT / 'android/app/src/main/AndroidManifest.xml')
+        application = manifest.find('application')
+        self.assertEqual(application.attrib[ANDROID + 'allowBackup'], 'false')
+
     def test_dynamic_connection_alarm_and_fan_status_are_accessible_live_regions(self):
         ids = {
             node.attrib[ANDROID + 'id'].removeprefix('@+id/'): node
@@ -168,10 +192,14 @@ class AndroidLayoutContractTests(unittest.TestCase):
 
     def test_pwa_narrow_header_keeps_install_action_and_brand_on_one_line(self):
         css = (ROOT / 'pwa' / 'styles.css').read_text()
+        html = (ROOT / 'pwa' / 'index.html').read_text()
         narrow = re.search(r'@media\s*\(max-width:\s*370px\)\s*\{(?P<rules>[^}]+(?:\}[^}]+)*)\}', css)
         self.assertIsNotNone(narrow)
         rules = narrow.group('rules')
-        self.assertIn('.brand .eyebrow { display: none; }', rules)
+        brand = re.search(r'<div class="brand">(?P<body>.*?)</div>\s*</div>', html, re.DOTALL)
+        self.assertIsNotNone(brand)
+        self.assertNotIn('eyebrow', brand.group('body'))
+        self.assertIn('<h1>Open-Akorn</h1>', brand.group('body'))
         self.assertIn('h1 { font-size: 22px; white-space: nowrap; }', rules)
         self.assertIn('.install-button { flex: 0 0 auto; min-height: 48px;', rules)
         self.assertIn('white-space: nowrap;', rules)

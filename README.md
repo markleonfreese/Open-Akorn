@@ -23,7 +23,7 @@ The debug-signed APK is written to `android/app/build/outputs/apk/debug/app-debu
 
 The PWA runs on loopback and is available only on the computer running the gateway. Phone/tablet access to a gateway on another device requires a separately approved authenticated HTTPS setup; it is not enabled.
 
-The dashboard also has a local cook timer and a bounded current-session temperature graph. They do not send commands to the grill and do not persist cook history. The timer is not a dependable background or closed-app alert. The graph records fresh samples only and leaves gaps visible. Open-Akorn does not yet change pit/probe targets or manage a saved list of grills; target changes remain behind the physical acceptance and separate authorization gate.
+The dashboard also has a local cook timer, a bounded current-session temperature graph, and Android saved grill profiles. Profiles store a name plus the selected private IPv4 address or advertised Bluetooth name on that device only; loading a profile never connects automatically, and connecting closes the current session first. The PWA follows one loopback gateway target. Timers and graphs do not send grill commands or persist cook history; the timer is not a dependable background or closed-app alert. Open-Akorn does not change pit/probe targets; target changes remain behind the physical acceptance and separate authorization gate.
 
 ## Optional BLE status monitor
 The separately sourced BLE path needs the optional [Bleak](https://bleak.readthedocs.io/) package. On the same computer, install it with `python -m pip install bleak`, then select the exact advertised name observed on your own already-provisioned controller:

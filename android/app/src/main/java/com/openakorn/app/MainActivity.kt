@@ -24,6 +24,7 @@ import android.os.Looper
 import android.os.SystemClock
 import android.widget.Button
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.text.InputType
 import android.widget.TextView
 import android.widget.Toast
@@ -36,6 +37,9 @@ class MainActivity : Activity() {
     private val handler = Handler(Looper.getMainLooper())
     private val store = TelemetryStore()
     private val sessionGate = TransportSessionGate()
+    private val grillProfiles by lazy {
+        LocalGrillProfiles(getSharedPreferences("open_akorn_local", MODE_PRIVATE))
+    }
     private val serviceUuid = UUID.fromString(AkornProtocol.STATUS_SERVICE_UUID)
     private val statusUuid = UUID.fromString(AkornProtocol.STATUS_CHARACTERISTIC_UUID)
     private val cccdUuid = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
@@ -210,6 +214,13 @@ class MainActivity : Activity() {
         findViewById<Button>(R.id.tcpButton).setOnClickListener { startTcpFromInput() }
         findViewById<Button>(R.id.bleButton).setOnClickListener { startBleFromInput() }
         findViewById<Button>(R.id.bleDiscoverButton).setOnClickListener { requestBleDiscovery() }
+        findViewById<Button>(R.id.savedGrillsButton).setOnClickListener { showSavedGrills() }
+        findViewById<Button>(R.id.saveWifiProfileButton).setOnClickListener {
+            saveCurrentProfile(GrillProfileTransport.WIFI_TCP)
+        }
+        findViewById<Button>(R.id.saveBluetoothProfileButton).setOnClickListener {
+            saveCurrentProfile(GrillProfileTransport.BLUETOOTH)
+        }
         findViewById<Button>(R.id.startCookTimerButton).setOnClickListener { promptCookTimer() }
         findViewById<Button>(R.id.cancelCookTimerButton).setOnClickListener {
             cookTimer.cancel()
@@ -290,6 +301,98 @@ class MainActivity : Activity() {
             return
         }
         startTcp(addressBytes)
+    }
+
+    private fun saveCurrentProfile(transport: GrillProfileTransport) {
+        val endpoint = when (transport) {
+            GrillProfileTransport.WIFI_TCP -> ipInput.text.toString().trim()
+            GrillProfileTransport.BLUETOOTH -> bleNameInput.text.toString().trim()
+        }
+        val candidate = GrillProfile("Grill", transport, endpoint)
+        if (!candidate.isValid()) {
+            Toast.makeText(
+                this,
+                if (transport == GrillProfileTransport.WIFI_TCP) R.string.invalid_wifi_profile
+                else R.string.invalid_bluetooth_profile,
+                Toast.LENGTH_SHORT,
+            ).show()
+            return
+        }
+
+        val nameInput = EditText(this).apply {
+            hint = getString(R.string.grill_profile_name)
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_WORDS
+            maxLines = 1
+        }
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            val padding = (20 * resources.displayMetrics.density).toInt()
+            setPadding(padding, 0, padding, 0)
+            addView(nameInput)
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.save_grill_profile)
+            .setView(content)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val profile = candidate.copy(name = nameInput.text.toString().trim())
+                if (grillProfiles.add(profile)) {
+                    Toast.makeText(this, R.string.profile_saved, Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, R.string.profile_not_saved, Toast.LENGTH_LONG).show()
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun showSavedGrills() {
+        val profiles = grillProfiles.all()
+        if (profiles.isEmpty()) {
+            Toast.makeText(this, R.string.no_saved_grills, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val labels = profiles.map { profile ->
+            val transport = getString(
+                if (profile.transport == GrillProfileTransport.WIFI_TCP) R.string.profile_wifi
+                else R.string.profile_bluetooth,
+            )
+            getString(R.string.saved_grill_label, profile.name, transport, profile.endpoint)
+        }.toTypedArray()
+        AlertDialog.Builder(this)
+            .setTitle(R.string.saved_grills)
+            .setItems(labels) { _, index -> loadGrillProfile(profiles[index]) }
+            .setPositiveButton(R.string.forget_grill) { _, _ -> showForgetGrill() }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun showForgetGrill() {
+        val profiles = grillProfiles.all()
+        if (profiles.isEmpty()) return
+        val labels = profiles.map { getString(R.string.saved_grill_forget_label, it.name, it.endpoint) }.toTypedArray()
+        AlertDialog.Builder(this)
+            .setTitle(R.string.forget_grill)
+            .setItems(labels) { _, index ->
+                if (grillProfiles.remove(profiles[index])) {
+                    Toast.makeText(this, R.string.grill_profile_forgotten, Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun loadGrillProfile(profile: GrillProfile) {
+        when (profile.transport) {
+            GrillProfileTransport.WIFI_TCP -> {
+                ipInput.setText(profile.endpoint)
+                bleNameInput.text.clear()
+            }
+            GrillProfileTransport.BLUETOOTH -> {
+                bleNameInput.setText(profile.endpoint)
+                ipInput.text.clear()
+            }
+        }
+        showDetail(getString(R.string.profile_loaded, profile.name))
     }
 
     private fun startTcp(address: ByteArray) {

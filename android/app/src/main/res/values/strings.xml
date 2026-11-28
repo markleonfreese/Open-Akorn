@@ -54,4 +54,22 @@
     <string name="find_nearby_akorn_devices">Find nearby AKORN devices</string>
     <string name="enter_device_name_manually">Or enter the device name manually</string>
     <string name="akorn_device_name">AKORN device name</string>
+    <string name="saved_grills">Saved grills</string>
+    <string name="saved_grills_help">Saved on this device only. Choose one to load its details, then tap Connect. Connecting stops the current session; selection never connects automatically.</string>
+    <string name="save_wifi_profile">Save this Wi-Fi setup</string>
+    <string name="save_bluetooth_profile">Save this Bluetooth setup</string>
+    <string name="save_grill_profile">Name this grill</string>
+    <string name="grill_profile_name">Grill name</string>
+    <string name="profile_loaded">%1$s loaded. Tap Connect to switch; nothing connected automatically.</string>
+    <string name="profile_saved">Grill profile saved on this device.</string>
+    <string name="profile_not_saved">Could not save this profile. Check the name and address; profiles are limited to 12 unique connections.</string>
+    <string name="forget_grill">Forget a grill</string>
+    <string name="grill_profile_forgotten">Grill profile removed from this device.</string>
+    <string name="no_saved_grills">No grill profiles saved yet.</string>
+    <string name="invalid_wifi_profile">Enter a valid private IPv4 address first.</string>
+    <string name="invalid_bluetooth_profile">Enter an exact Akorn-* advertised name first.</string>
+    <string name="profile_wifi">Wi-Fi</string>
+    <string name="profile_bluetooth">Bluetooth</string>
+    <string name="saved_grill_label">%1$s · %2$s · %3$s</string>
+    <string name="saved_grill_forget_label">%1$s · %2$s</string>
 </resources>
