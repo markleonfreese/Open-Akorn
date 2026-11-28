@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.venv/
+**/.gradle/
+**/build/
+**/.kotlin/
+local.properties
+*.apk
+*.dex
+*.smali
+*.pcap
+*.pcapng
+*.btsnoop
+captures/
+decompiled/
+.env
+captures/*.csv

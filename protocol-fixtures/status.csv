@@ -1,0 +1,8 @@
+name,transport,frame_size,payload_hex,valid,pit_current_f,pit_target_f,probe1_current_f,probe1_target_f,probe2_current_f,probe2_target_f,alarm_active,fan_mode,fan_percent
+akorn_auto_tcp,tcp,20,006900e110000045006003e81000100010321100,true,105,225,69,96,,,false,auto,
+akorn_auto_ble,ble,20,00191400006900e110000045006003e81000100010321100,true,105,225,69,96,,,false,auto,
+akorn_manual_fan,tcp,20,006900e100000045006003e81000100000321100,true,105,225,69,96,,,true,manual,50
+legacy_16_byte,tcp,16,006900e110000045006003e810001000,true,105,225,69,96,,,,,
+invalid_reserved_byte,tcp,20,006900e110010045006003e81000100010321100,false,,,,,,,,,
+invalid_ble_header,ble,20,ffffffff006900e110000045006003e81000100010321100,false,,,,,,,,,
+invalid_ble_length,ble,20,00191400006900e110000045006003e810001000103211,false,,,,,,,,,

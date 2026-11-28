@@ -1,0 +1,35 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "pwa/index.html"
+        ],
+        "createdAt": "2026-11-27T09:25:17.867Z",
+        "reason": "False positive: the existing warm cream is the coordinated Android/PWA product background, documented in Android colors.xml and PWA CSS; the V1 brief requires cross-surface consistency, and tested muted-text contrast now exceeds WCAG AA."
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "pwa/index.html"
+        ],
+        "createdAt": "2026-11-27T09:26:02.124Z",
+        "reason": "False positive: the .pit-panel has responsive CSS padding of clamp(17px, 5vw, 28px) horizontally and 20px vertically; the HTML-only detector does not resolve the CSS."
+      },
+      {
+        "rule": "em-dash-overuse",
+        "value": "*",
+        "files": [
+          "pwa/index.html"
+        ],
+        "createdAt": "2026-11-27T09:26:02.146Z",
+        "reason": "False positive: em dashes are unavailable-temperature placeholders in the PWA, not body-copy punctuation or cadence."
+      }
+    ]
+  }
+}
