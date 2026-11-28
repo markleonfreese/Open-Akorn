@@ -64,6 +64,43 @@ class PwaTests(unittest.TestCase):
         self.assertIn('aria-atomic="true"', status.group('attributes'))
         self.assertNotRegex(status.group(0), r'id="ageText"')
 
+    def test_local_timer_is_explicitly_local_and_has_bounded_minutes(self):
+        root = Path(__file__).resolve().parents[1]
+        html = (root / 'pwa' / 'index.html').read_text()
+        script = (root / 'pwa' / 'app.js').read_text()
+        self.assertIn('id="cookTimerForm"', html)
+        self.assertIn('id="cookTimerMinutes" type="number" min="1" max="1440"', html)
+        self.assertIn('This timer runs in this page only.', html)
+        self.assertIn('if (!Number.isInteger(minutes) || minutes < 1 || minutes > 1440)', script)
+        self.assertIn('cookTimerDeadline = Date.now() + minutes * 60_000', script)
+        self.assertIn("cookTimerFinishedAnnounced ? 'Timer finished'", script)
+        self.assertIsNone(re.search(r'fetch\([^)]*(command|setTemp|fan|timer)', script, re.IGNORECASE))
+
+    def test_graph_is_current_page_session_bounded_and_preserves_gaps(self):
+        root = Path(__file__).resolve().parents[1]
+        html = (root / 'pwa' / 'index.html').read_text()
+        script = (root / 'pwa' / 'app.js').read_text()
+        self.assertIn('id="temperatureChart"', html)
+        self.assertIn('°C · fresh samples from this page session. Gaps stay visible.', html)
+        self.assertIn('if (graphSource !== null && source !== graphSource) temperatureSamples = []', script)
+        self.assertIn('if (temperatureSamples.length > 720) temperatureSamples.shift()', script)
+        self.assertIn('sample.time - previousTime > 15_000', script)
+        self.assertIn('Number.isFinite(item?.current_c)', script)
+
+    def test_android_timer_and_graph_are_local_and_accessible(self):
+        root = Path(__file__).resolve().parents[1]
+        layout = (root / 'android' / 'app' / 'src' / 'main' / 'res' / 'layout' / 'monitor_dashboard.xml').read_text()
+        timer = (root / 'android' / 'app' / 'src' / 'main' / 'java' / 'com' / 'openakorn' / 'app' / 'LocalCookTimer.kt').read_text()
+        history = (root / 'android' / 'app' / 'src' / 'main' / 'java' / 'com' / 'openakorn' / 'app' / 'TemperatureHistory.kt').read_text()
+        strings = (root / 'android' / 'app' / 'src' / 'main' / 'res' / 'values' / 'strings.xml').read_text()
+        self.assertIn('android:id="@+id/startCookTimerButton"', layout)
+        self.assertIn('android:id="@+id/temperatureGraph"', layout)
+        self.assertIn('android:accessibilityHeading="true"', layout)
+        self.assertIn('no controller or alarm-command integration', timer.lower())
+        self.assertIn('runs in this app only', strings.lower())
+        self.assertIn('class TemperatureHistory', history)
+        self.assertIn('private val capacity: Int = 720', history)
+
 
 if __name__ == '__main__':
     unittest.main()

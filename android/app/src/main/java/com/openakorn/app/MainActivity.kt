@@ -24,6 +24,7 @@ import android.os.Looper
 import android.os.SystemClock
 import android.widget.Button
 import android.widget.EditText
+import android.text.InputType
 import android.widget.TextView
 import android.widget.Toast
 import java.net.SocketTimeoutException
@@ -49,6 +50,11 @@ class MainActivity : Activity() {
     private lateinit var probe2Target: TextView
     private lateinit var fanStatusText: TextView
     private lateinit var alarmStatusText: TextView
+    private lateinit var cookTimerText: TextView
+    private lateinit var temperatureGraph: TemperatureGraphView
+    private val cookTimer = LocalCookTimer()
+    private val temperatureHistory = TemperatureHistory()
+    private var timerFinishAnnounced = false
     private lateinit var ipInput: EditText
     private lateinit var bleNameInput: EditText
 
@@ -204,6 +210,13 @@ class MainActivity : Activity() {
         findViewById<Button>(R.id.tcpButton).setOnClickListener { startTcpFromInput() }
         findViewById<Button>(R.id.bleButton).setOnClickListener { startBleFromInput() }
         findViewById<Button>(R.id.bleDiscoverButton).setOnClickListener { requestBleDiscovery() }
+        findViewById<Button>(R.id.startCookTimerButton).setOnClickListener { promptCookTimer() }
+        findViewById<Button>(R.id.cancelCookTimerButton).setOnClickListener {
+            cookTimer.cancel()
+            timerFinishAnnounced = false
+            renderCookTimer()
+            Toast.makeText(this, R.string.timer_cancelled, Toast.LENGTH_SHORT).show()
+        }
         render()
     }
 
@@ -240,12 +253,15 @@ class MainActivity : Activity() {
         probe2Target = findViewById(R.id.probe2Target)
         fanStatusText = findViewById(R.id.fanStatusText)
         alarmStatusText = findViewById(R.id.alarmStatusText)
+        cookTimerText = findViewById(R.id.cookTimerText)
+        temperatureGraph = findViewById(R.id.temperatureGraph)
         ipInput = findViewById(R.id.ipInput)
         bleNameInput = findViewById(R.id.bleNameInput)
     }
 
     private fun startDemo() {
         stopTransportOnly()
+        temperatureHistory.clear()
         activeSource = "demo"
         store.connecting("demo", demo = true)
         demoReading = try {
@@ -278,6 +294,7 @@ class MainActivity : Activity() {
 
     private fun startTcp(address: ByteArray) {
         stopTransportOnly()
+        temperatureHistory.clear()
         activeSource = "tcp"
         val session = sessionGate.start()
         val stop = AtomicBoolean(false)
@@ -443,6 +460,7 @@ class MainActivity : Activity() {
             return
         }
         stopTransportOnly()
+        temperatureHistory.clear()
         activeSource = "ble"
         val session = sessionGate.start()
         store.connecting("ble")
@@ -453,6 +471,7 @@ class MainActivity : Activity() {
 
     private fun startBle(name: String) {
         stopTransportOnly()
+        temperatureHistory.clear()
         activeSource = "ble"
         val session = sessionGate.start()
         store.connecting("ble")
@@ -686,7 +705,12 @@ class MainActivity : Activity() {
     }
 
     private fun render() {
+        renderCookTimer()
         val snapshot = store.snapshot(SystemClock.elapsedRealtime())
+        val now = SystemClock.elapsedRealtime()
+        if (snapshot.state == LinkState.LIVE) temperatureHistory.record(snapshot.reading, now)
+        else if (snapshot.state == LinkState.DISCONNECTED || snapshot.state == LinkState.STALE) temperatureHistory.record(null, now)
+        temperatureGraph.submit(temperatureHistory.snapshot())
         val stateLabel = getString(
             when (snapshot.state) {
                 LinkState.WAITING -> R.string.state_waiting
@@ -744,6 +768,62 @@ class MainActivity : Activity() {
         alarmStatusText.setTextIfChanged(alarmText)
         val alarmColor = getColor(if (reading.alarm) R.color.akorn_alarm else R.color.akorn_ink)
         if (alarmStatusText.currentTextColor != alarmColor) alarmStatusText.setTextColor(alarmColor)
+    }
+
+    private fun promptCookTimer() {
+        val minutesInput = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_NUMBER
+            hint = getString(R.string.timer_minutes_hint)
+            setText("60")
+            selectAll()
+        }
+        val padding = (20 * resources.displayMetrics.density).toInt()
+        val container = android.widget.FrameLayout(this).apply {
+            setPadding(padding, 0, padding, 0)
+            addView(minutesInput)
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.set_local_timer)
+            .setView(container)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val minutes = minutesInput.text.toString().toLongOrNull()
+                if (minutes == null || minutes !in 1L..1440L) {
+                    Toast.makeText(this, R.string.timer_minutes_hint, Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+                cookTimer.start(minutes * 60_000L, SystemClock.elapsedRealtime())
+                timerFinishAnnounced = false
+                renderCookTimer()
+            }
+            .show()
+    }
+
+    private fun renderCookTimer() {
+        val now = SystemClock.elapsedRealtime()
+        val remaining = cookTimer.remainingMillis(now)
+        if (remaining == null) {
+            cookTimerText.setTextIfChanged(getString(R.string.timer_not_running))
+            return
+        }
+        if (cookTimer.isFinished(now)) {
+            cookTimerText.setTextIfChanged(getString(R.string.timer_finished))
+            if (!timerFinishAnnounced) {
+                timerFinishAnnounced = true
+                Toast.makeText(this, R.string.timer_finished, Toast.LENGTH_LONG).show()
+            }
+            return
+        }
+        val totalSeconds = (remaining + 999L) / 1000L
+        val hours = totalSeconds / 3600L
+        val minutes = (totalSeconds % 3600L) / 60L
+        val seconds = totalSeconds % 60L
+        val formatted = if (hours > 0) {
+            String.format(Locale.getDefault(), "%d:%02d:%02d", hours, minutes, seconds)
+        } else {
+            String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds)
+        }
+        cookTimerText.setTextIfChanged(getString(R.string.timer_remaining, formatted))
     }
 
     private fun celsius(value: Double?): String = value?.let {

@@ -34,7 +34,7 @@ h1 { margin: 0; font-size: clamp(24px, 5vw, 31px); line-height: 1.05; letter-spa
 h2 { margin: 0; font-size: 19px; letter-spacing: -.02em; }
 .install-button { min-height: 48px; border: 0; border-radius: 999px; padding: 0 16px; background: var(--green); color: white; font-weight: 700; }
 
-.connection, .pit-panel, .probe-card, .reported-status, .safety-note {
+.connection, .pit-panel, .probe-card, .reported-status, .cook-timer, .temperature-history, .safety-note {
   border: 1px solid var(--line);
   border-radius: 18px;
   background: var(--paper);
@@ -74,6 +74,26 @@ h2 { margin: 0; font-size: 19px; letter-spacing: -.02em; }
 .reported-status strong { font-size: 15px; }
 .reported-status strong.alarm { color: var(--red); }
 
+.cook-timer { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 12px; padding: 16px; }
+.cook-timer .eyebrow { margin-bottom: 4px; }
+.timer-status { margin: 6px 0 0; font-size: 20px; font-weight: 750; font-variant-numeric: tabular-nums; }
+.timer-controls { display: grid; grid-template-columns: auto minmax(90px, 1fr) auto auto; align-items: center; gap: 8px; }
+.timer-controls label { font-size: 13px; font-weight: 650; }
+.timer-controls input { width: 100%; min-height: 48px; border: 1px solid var(--line); border-radius: 10px; padding: 0 10px; background: white; color: var(--ink); font: inherit; }
+.timer-controls button { min-height: 48px; border: 0; border-radius: 10px; padding: 0 14px; background: var(--green); color: white; font-weight: 700; }
+.timer-controls .secondary-button { border: 1px solid var(--line); background: transparent; color: var(--ink); }
+.timer-note { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.4; }
+.temperature-history { margin-top: 12px; padding: 16px; }
+.temperature-history > p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+.temperature-history canvas { display: block; width: 100%; height: 210px; margin-top: 6px; }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 4px 0 0; padding: 0; list-style: none; color: var(--muted); font-size: 12px; }
+.chart-legend li { display: flex; align-items: center; gap: 6px; }
+.chart-legend span { width: 18px; height: 3px; display: inline-block; border-radius: 2px; }
+.legend-pit { background: #244a35; }
+.legend-probe1 { background: #a56619; }
+.legend-probe2 { background: #356a86; }
+.legend-target { border-top: 2px dashed #5a6259; }
+
 .safety-note { margin-top: 18px; padding: 15px 17px; background: #eeece4; }
 .safety-note strong { font-size: 14px; }
 .safety-note p { margin: 5px 0 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
@@ -103,6 +123,9 @@ footer { padding: 17px 5px 5px; color: var(--muted); font-size: 11px; text-align
   .pit-panel { grid-column: 1; margin-top: 0; }
   .probe-grid { grid-column: 2; margin-top: 0; }
   .reported-status { grid-column: 1; margin-top: 0; }
+  .cook-timer { grid-column: 1 / -1; grid-template-columns: minmax(180px, .7fr) minmax(0, 1.3fr); align-items: center; }
+  .timer-note { grid-column: 1 / -1; }
+  .temperature-history { grid-column: 1 / -1; }
   .safety-note { grid-column: 2; margin-top: 0; align-self: stretch; display: flex; flex-direction: column; justify-content: center; }
   footer { padding-top: 5px; }
 }
@@ -118,4 +141,6 @@ footer { padding: 17px 5px 5px; color: var(--muted); font-size: 11px; text-align
   .probe-card { padding: 13px 11px; }
   .connection { padding-left: 12px; padding-right: 12px; }
   .age { font-size: 11px; }
+  .timer-controls { grid-template-columns: auto minmax(55px, 1fr) auto; }
+  .timer-controls .secondary-button { grid-column: 3; }
 }

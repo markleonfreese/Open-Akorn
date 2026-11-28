@@ -75,6 +75,33 @@
       </div>
     </section>
 
+    <section class="cook-timer" aria-labelledby="cookTimerHeading">
+      <div>
+        <p class="eyebrow">LOCAL ONLY</p>
+        <h2 id="cookTimerHeading">Cook timer</h2>
+        <p id="cookTimerStatus" class="timer-status" role="status" aria-live="polite">No local timer running</p>
+      </div>
+      <form id="cookTimerForm" class="timer-controls">
+        <label for="cookTimerMinutes">Minutes</label>
+        <input id="cookTimerMinutes" type="number" min="1" max="1440" value="60" inputmode="numeric">
+        <button type="submit">Start timer</button>
+        <button id="cancelCookTimer" type="button" class="secondary-button">Cancel</button>
+      </form>
+      <p class="timer-note">This timer runs in this page only. It does not change grill settings and may not alert if the page is closed or suspended.</p>
+    </section>
+
+    <section class="temperature-history" aria-labelledby="temperatureHistoryHeading">
+      <h2 id="temperatureHistoryHeading">Temperature graph</h2>
+      <p>°C · fresh samples from this page session. Gaps stay visible.</p>
+      <canvas id="temperatureChart" height="210" role="img" aria-label="Temperature graph. Waiting for fresh samples."></canvas>
+      <ul class="chart-legend" aria-label="Graph lines">
+        <li><span class="legend-pit"></span>Pit</li>
+        <li><span class="legend-probe1"></span>Probe 1</li>
+        <li><span class="legend-probe2"></span>Probe 2</li>
+        <li><span class="legend-target"></span>Dashed lines show reported targets</li>
+      </ul>
+    </section>
+
     <aside class="safety-note">
       <strong>Monitoring only</strong>
       <p>The factory controller remains responsible for temperature regulation and safety. Do not use this page to make safety decisions.</p>
