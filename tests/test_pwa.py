@@ -65,6 +65,13 @@ class PwaTests(unittest.TestCase):
         self.assertIn('aria-atomic="true"', status.group('attributes'))
         self.assertNotRegex(status.group(0), r'id="ageText"')
 
+    def test_pit_heading_carries_cooking_chamber_context_without_eyebrow(self):
+        html = (Path(__file__).resolve().parents[1] / 'pwa' / 'index.html').read_text()
+        panel = re.search(r'<section class="pit-panel"(?P<body>.*?)</section>', html, re.DOTALL)
+        self.assertIsNotNone(panel)
+        self.assertIn('<h2 id="pitLabel">Cooking chamber temperature</h2>', panel.group('body'))
+        self.assertNotIn('eyebrow', panel.group('body'))
+
     def test_local_timer_is_explicitly_local_and_has_bounded_minutes(self):
         root = Path(__file__).resolve().parents[1]
         html = (root / 'pwa' / 'index.html').read_text()
