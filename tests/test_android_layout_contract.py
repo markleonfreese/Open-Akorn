@@ -170,6 +170,27 @@ class AndroidLayoutContractTests(unittest.TestCase):
         self.assertIn('probe?.currentC?.asGraphTemperature()', summary)
         self.assertIn('probe?.targetC?.asGraphTemperature()', summary)
 
+    def test_native_simulator_can_configure_probe_alarm_and_connection_states(self):
+        setup = self.panels['connection_setup']
+        button = next(
+            node for node in setup.iter('Button')
+            if node.attrib.get(ANDROID + 'id') == '@+id/demoSettingsButton'
+        )
+        self.assertGreaterEqual(int(button.attrib[ANDROID + 'layout_height'].removesuffix('dp')), 48)
+        self.assertIn('demo_probe1_disconnected', self.string_names)
+        self.assertIn('demo_probe2_disconnected', self.string_names)
+        self.assertIn('demo_alarm_active', self.string_names)
+        self.assertIn('demo_connection_failure', self.string_names)
+
+        activity = (ROOT / 'android/app/src/main/java/com/openakorn/app/MainActivity.kt').read_text()
+        model = (ROOT / 'android/app/src/main/java/com/openakorn/app/DemoScenario.kt').read_text()
+        self.assertIn('promptDemoScenario()', activity)
+        self.assertIn('DemoScenario(', activity)
+        self.assertIn('store.disconnect("demo", demo = true)', activity)
+        self.assertIn('fun applyTo(base: TelemetryReading)', model)
+        self.assertIn('probe2Disconnected', model)
+        self.assertIn('alarm = alarmActive', model)
+
     def test_layout_strings_exist_and_primary_text_colors_meet_contrast_target(self):
         for panel in self.panels.values():
             self.assertLessEqual(referenced_names(panel, 'text', '@string/'), self.string_names)

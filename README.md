@@ -8,9 +8,19 @@ python3 monitor.py --demo
 ```
 Open http://127.0.0.1:8080 on the same computer. The demo uses a shared synthetic fixture, not a physical grill. The responsive page is an installable PWA on supported browsers. Its service worker caches only the app shell; current telemetry always comes from the local gateway and disappears when the gateway is offline.
 
+To explore other PWA states, pass simulated Celsius values and conditions on the command line. For example:
+
+```sh
+python3 monitor.py --demo --demo-pit-c 110 --demo-pit-target-c 121.1 \
+  --demo-probe1-c 21 --demo-probe1-target-c 35.6 \
+  --demo-disconnect-probe 2 --demo-alarm
+```
+
+Use `--demo-connection-failure` to start with no telemetry, or `--demo-disconnect-after 20` to simulate a connection loss after about 20 seconds. These options only alter synthetic local data; they never connect to or command a grill. Omit them to use the shared default fixture.
+
 ## Android phone and tablet preview
 
-The native Kotlin app supports Android 10/API 29 and newer. It has a shared-fixture demo plus explicit read-only TCP and Bluetooth connections. Android can save up to 12 locally named connection profiles; selecting a profile loads its details but never connects automatically, and connecting replaces the current session. Profiles are not backed up and do not store Bluetooth addresses. The app does not embed Python, use a WebView, scan networks, run in the background, or send controller commands. TCP accepts a manually entered private IPv4 address. BLE requires the exact observed `Akorn-*` name and subscribes to status notifications only.
+The native Kotlin app supports Android 10/API 29 and newer. It has a shared-fixture demo with a local configuration dialog for temperatures, disconnected probes, alarm state and simulated connection failure, plus explicit read-only TCP and Bluetooth connections. Android can save up to 12 locally named connection profiles; selecting a profile loads its details but never connects automatically, and connecting replaces the current session. Profiles are not backed up and do not store Bluetooth addresses. The app does not embed Python, use a WebView, scan networks, run in the background, or send controller commands. TCP accepts a manually entered private IPv4 address. BLE requires the exact observed `Akorn-*` name and subscribes to status notifications only.
 
 Install a JDK 17 or newer and Android SDK Platform 36, and accept the SDK license in the SDK Manager. Build and run the Android unit tests with:
 
@@ -19,7 +29,7 @@ cd android
 ./gradlew testDebugUnitTest assembleDebug
 ```
 
-The debug-signed APK is written to `android/app/build/outputs/apk/debug/app-debug.apk`. It is intended for local testing, not release distribution. The app disconnects when it is backgrounded; persistent alerts are deferred until physical compatibility is established.
+The debug-signed APK is written to `android/app/build/outputs/apk/debug/app-debug.apk`. It is intended for local testing, not release distribution. The app disconnects from the grill when backgrounded. Its local cook-timer notification is separate from grill monitoring and can be delayed or cancelled by Android; it is not a safety alarm.
 
 The PWA runs on loopback and is available only on the computer running the gateway. Phone/tablet access to a gateway on another device requires a separately approved authenticated HTTPS setup; it is not enabled.
 

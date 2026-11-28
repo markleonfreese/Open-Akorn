@@ -7,7 +7,7 @@ from io import BytesIO
 from types import SimpleNamespace
 
 from monitor import (BLE_STATUS_HEADER, BLE_STATUS_UUID, FRAME, Snapshot,
-                     decode, decode_ble_status_notification, read_frames,
+                     decode, decode_ble_status_notification, demo_reading, read_frames,
                      receive, receive_ble)
 
 # Community-documented core example plus synthetic AKORN fan extension.
@@ -22,6 +22,33 @@ class MonitorTests(unittest.TestCase):
         self.assertIsNone(v['probe2']['target_c'])
         self.assertEqual(v['fan_mode'], 'auto')
         self.assertIsNone(v['fan_percent'])
+
+    def test_demo_reading_supports_configured_temperatures_probes_and_alarm(self):
+        value = demo_reading(
+            pit_c=100.0, pit_target_c=121.1,
+            probe1_c=20.6, probe1_target_c=35.6,
+            disconnected_probes=(2,), alarm=True,
+        )
+        self.assertEqual(value['pit']['current_f'], 212)
+        self.assertEqual(value['pit']['current_c'], 100.0)
+        self.assertEqual(value['pit']['target_c'], 121.1)
+        self.assertEqual(value['probe1']['current_c'], 20.6)
+        self.assertIsNone(value['probe2']['current_c'])
+        self.assertIsNone(value['probe2']['target_c'])
+        self.assertTrue(value['alarm'])
+
+    def test_demo_default_matches_shared_fixture_and_supports_legacy_frame_size(self):
+        self.assertEqual(demo_reading(), decode(FRAME, 20))
+        self.assertIsNone(demo_reading(frame_size=16)['fan_mode'])
+
+    def test_demo_rejects_non_protocol_temperature_ranges(self):
+        for value in (float('nan'), -18.0, 399.0):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                demo_reading(pit_c=value)
+
+    def test_demo_only_disconnects_meat_probes(self):
+        with self.assertRaisesRegex(ValueError, 'only probes 1 and 2'):
+            demo_reading(disconnected_probes=(0,))
 
     def test_manual_fan(self):
         v = decode(FRAME[:16] + bytes([0, 50, 17, 0]), 20)

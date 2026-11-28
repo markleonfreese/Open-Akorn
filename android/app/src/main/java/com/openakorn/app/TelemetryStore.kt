@@ -32,6 +32,7 @@ class TelemetryStore(private val freshnessMillis: Long = 5_000L) {
         this.demo = demo
         state = LinkState.CONNECTING
         reading = null
+        lastSampleAt = null
     }
 
     @Synchronized

@@ -3,6 +3,7 @@ import argparse
 import asyncio
 import ipaddress
 import json
+import math
 import socket
 import struct
 import threading
@@ -14,6 +15,36 @@ from urllib.parse import urlsplit
 FRAME = bytes.fromhex('006900e110000045006003e81000100010321100')
 BLE_STATUS_UUID = '0000bbb1-0000-1000-8000-00805f9b34fb'
 BLE_STATUS_HEADER = bytes.fromhex('00191400')
+
+
+def demo_reading(*, frame_size=20, pit_c=None, pit_target_c=None, probe1_c=None,
+                 probe1_target_c=None, probe2_c=None, probe2_target_c=None,
+                 disconnected_probes=(), alarm=False):
+    """Return a configurable synthetic reading without touching a controller."""
+    reading = decode(FRAME[:frame_size], frame_size)
+    for name, current, target in (
+        ('pit', pit_c, pit_target_c),
+        ('probe1', probe1_c, probe1_target_c),
+        ('probe2', probe2_c, probe2_target_c),
+    ):
+        probe = dict(reading[name])
+        for field, value in (('current', current), ('target', target)):
+            if value is None:
+                continue
+            if not math.isfinite(value) or not -17.8 <= value <= 398.9:
+                raise ValueError(f'{name} {field} must be between -17.8 and 398.9 °C')
+            fahrenheit = round(value * 9 / 5 + 32)
+            probe[f'{field}_f'] = fahrenheit
+            probe[f'{field}_c'] = round((fahrenheit - 32) * 5 / 9, 1)
+        reading[name] = probe
+    for number in disconnected_probes:
+        if number not in (1, 2):
+            raise ValueError('only probes 1 and 2 can be disconnected')
+        reading[f'probe{number}'] = dict(
+            current_f=None, current_c=None, target_f=None, target_c=None,
+        )
+    reading['alarm'] = bool(alarm)
+    return reading
 
 
 def decode(frame, size):
@@ -227,17 +258,64 @@ def main():
     modes.add_argument('--ble-name', help='exact advertised Auto-Akorn name (Akorn-...)')
     parser.add_argument('--frame-size', type=int, choices=(16, 20), default=20)
     parser.add_argument('--port', type=int, default=8080)
+    parser.add_argument('--demo-pit-c', type=float, help='simulated pit reading in Celsius')
+    parser.add_argument('--demo-pit-target-c', type=float, help='simulated pit target in Celsius')
+    parser.add_argument('--demo-probe1-c', type=float, help='simulated probe 1 reading in Celsius')
+    parser.add_argument('--demo-probe1-target-c', type=float, help='simulated probe 1 target in Celsius')
+    parser.add_argument('--demo-probe2-c', type=float, help='simulated probe 2 reading in Celsius')
+    parser.add_argument('--demo-probe2-target-c', type=float, help='simulated probe 2 target in Celsius')
+    parser.add_argument('--demo-disconnect-probe', type=int, choices=(1, 2), action='append', default=[],
+                        help='mark a simulated meat probe disconnected; repeat for both probes')
+    parser.add_argument('--demo-alarm', action='store_true', help='show an active simulated alarm')
+    parser.add_argument('--demo-connection-failure', action='store_true',
+                        help='start the gateway with simulated telemetry disconnected')
+    parser.add_argument('--demo-disconnect-after', type=float,
+                        help='simulate telemetry loss after this many seconds')
     args = parser.parse_args()
+    demo_values = (args.demo_pit_c, args.demo_pit_target_c, args.demo_probe1_c,
+                   args.demo_probe1_target_c, args.demo_probe2_c,
+                   args.demo_probe2_target_c)
+    if not args.demo and (any(value is not None for value in demo_values) or
+                          args.demo_disconnect_probe or args.demo_alarm or
+                          args.demo_connection_failure or args.demo_disconnect_after is not None):
+        parser.error('all --demo-* options require --demo')
+    if (args.demo_disconnect_after is not None and
+            (not math.isfinite(args.demo_disconnect_after) or args.demo_disconnect_after < 0)):
+        parser.error('--demo-disconnect-after must be a finite number zero or greater')
     if args.ip and not any(args.ip in ipaddress.ip_network(n) for n in ('10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16')):
         parser.error('use an explicit private LAN address for your own grill')
     if args.ble_name and (not args.ble_name.startswith('Akorn-') or args.frame_size != 20):
         parser.error('BLE status monitoring requires an exact Akorn-* name and 20-byte frames')
+    configured_demo = None
+    if args.demo:
+        try:
+            configured_demo = demo_reading(
+                frame_size=args.frame_size,
+                pit_c=args.demo_pit_c,
+                pit_target_c=args.demo_pit_target_c,
+                probe1_c=args.demo_probe1_c,
+                probe1_target_c=args.demo_probe1_target_c,
+                probe2_c=args.demo_probe2_c,
+                probe2_target_c=args.demo_probe2_target_c,
+                disconnected_probes=args.demo_disconnect_probe,
+                alarm=args.demo_alarm,
+            )
+        except ValueError as exc:
+            parser.error(f'invalid demo configuration: {exc}')
     state = Snapshot()
     source = 'demo' if args.demo else 'ble' if args.ble_name else 'tcp'
     httpd = server(state, args.demo, args.port, source=source)
     def simulate():
+        if args.demo_connection_failure:
+            state.disconnect()
+            return
+        started = time.monotonic()
         while True:
-            state.publish(decode(FRAME[:args.frame_size], args.frame_size))
+            if (args.demo_disconnect_after is not None and
+                    time.monotonic() - started >= args.demo_disconnect_after):
+                state.disconnect()
+                return
+            state.publish(configured_demo)
             time.sleep(1)
     if args.demo:
         target, worker_args = simulate, ()

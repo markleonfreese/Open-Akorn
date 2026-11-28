@@ -16,6 +16,16 @@ python3 monitor.py --demo
 
 On Windows, use `py -3` in place of `python3` for each Python command. Open http://127.0.0.1:8080 in a browser on the same computer. On Raspberry Pi, use a browser running on the Pi; this gateway is loopback-only, so another phone/tablet cannot reach it. Expect SIMULATION, pit 40.6°C, target 107.2°C, meat 1 at 20.6°C and meat 2 disconnected. Press Ctrl+C to stop. If tests fail, record the output and `git rev-parse HEAD` before stopping.
 
+The PWA simulator can also exercise chosen readings, disconnected probes, alarm state and connection loss. Replace the basic `--demo` command with this example to try those states:
+
+```sh
+python3 monitor.py --demo --demo-pit-c 110 --demo-pit-target-c 121.1 \
+  --demo-probe1-c 21 --demo-probe1-target-c 35.6 \
+  --demo-disconnect-probe 2 --demo-alarm
+```
+
+Use `--demo-connection-failure` to show startup without telemetry, or `--demo-disconnect-after 20` to show readings disappear after about 20 seconds. Temperatures accept -17.8 to 398.9°C. On Windows replace `python3` with `py -3`. These scenarios are synthetic and apply to the Python/PWA gateway. On Android, tap **Configure simulation**, set Celsius readings, choose probe/alarm/connection states, then tap **Run simulation**. **Try demo** still opens the shared default fixture. No simulation option connects to or changes a grill.
+
 ## 2. Install the Android preview
 
 The current owner-preview APK is version `0.1.0` (`versionCode=1`, app id `com.openakorn.app`), debug-signed, 2,817,580 bytes. Download artifact `open-akorn-debug-73ec689c0b8b256ce0253dc2d49e16551a5b3f84` from [successful PR run 46144809549](https://github.com/markleonfreese/Open-Akorn/actions/runs/46144809549). It is built from commit `73ec689c0b8b256ce0253dc2d49e16551a5b3f84` and includes optional local timer notifications, the current-session graph with screen-reader summaries and named grill profiles. SHA-256: `080c8e032235640d59d60b65b6a44eb0cf3187d64f7b7b23c06e007e1487e72e`. A verified copy on the development Mac is `/Users/markfreese/Downloads/Open-Akorn-debug-0.1.0-73ec689.apk`. The artifact expires seven days after the run; keep the local copy for the visit. This debug preview is for supervised testing, not a release build.

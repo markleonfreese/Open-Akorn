@@ -22,13 +22,17 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.view.View
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.text.InputType
 import android.widget.TextView
 import android.widget.Toast
 import java.net.SocketTimeoutException
+import java.text.DecimalFormatSymbols
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
@@ -211,6 +215,7 @@ class MainActivity : Activity() {
         setContentView(R.layout.activity_main)
         bindViews()
         findViewById<Button>(R.id.demoButton).setOnClickListener { startDemo() }
+        findViewById<Button>(R.id.demoSettingsButton).setOnClickListener { promptDemoScenario() }
         findViewById<Button>(R.id.disconnectButton).setOnClickListener { stopCurrentTransport("Disconnected.") }
         findViewById<Button>(R.id.tcpButton).setOnClickListener { startTcpFromInput() }
         findViewById<Button>(R.id.bleButton).setOnClickListener { startBleFromInput() }
@@ -273,20 +278,140 @@ class MainActivity : Activity() {
         bleNameInput = findViewById(R.id.bleNameInput)
     }
 
-    private fun startDemo() {
+    private fun promptDemoScenario() {
+        val fixture = loadDemoFixture()
+        if (fixture == null) {
+            Toast.makeText(this, R.string.demo_fixture_unavailable, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val defaults = DemoScenario.from(fixture)
+        val form = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            val padding = (16 * resources.displayMetrics.density).toInt()
+            setPadding(padding, padding, padding, padding)
+        }
+        fun numberField(labelId: Int, value: Double): EditText {
+            val fieldId = View.generateViewId()
+            val decimalSeparator = DecimalFormatSymbols.getInstance().decimalSeparator
+            val label = TextView(this).apply {
+                text = getString(labelId)
+                textSize = 14f
+                labelFor = fieldId
+            }
+            form.addView(label, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ))
+            return EditText(this).apply {
+                id = fieldId
+                setText(value.toString().replace('.', decimalSeparator))
+                inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL or
+                    InputType.TYPE_NUMBER_FLAG_SIGNED
+                setSingleLine(true)
+                form.addView(this, LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ))
+            }
+        }
+        val pit = numberField(R.string.demo_pit_current, defaults.pitC)
+        val pitTarget = numberField(R.string.demo_pit_target, defaults.pitTargetC)
+        val probe1 = numberField(R.string.demo_probe1_current, defaults.probe1C)
+        val probe1Target = numberField(R.string.demo_probe1_target, defaults.probe1TargetC)
+        val probe2 = numberField(R.string.demo_probe2_current, defaults.probe2C)
+        val probe2Target = numberField(R.string.demo_probe2_target, defaults.probe2TargetC)
+        val disconnected1 = CheckBox(this).apply {
+            text = getString(R.string.demo_probe1_disconnected)
+            isChecked = defaults.probe1Disconnected
+        }
+        val disconnected2 = CheckBox(this).apply {
+            text = getString(R.string.demo_probe2_disconnected)
+            isChecked = defaults.probe2Disconnected
+        }
+        val alarm = CheckBox(this).apply {
+            text = getString(R.string.demo_alarm_active)
+            isChecked = defaults.alarmActive
+        }
+        val connectionFailure = CheckBox(this).apply {
+            text = getString(R.string.demo_connection_failure)
+        }
+        form.addView(disconnected1)
+        form.addView(disconnected2)
+        form.addView(alarm)
+        form.addView(connectionFailure)
+        val help = TextView(this).apply {
+            text = getString(R.string.demo_settings_help)
+            textSize = 13f
+            setPadding(0, (8 * resources.displayMetrics.density).toInt(), 0, 0)
+        }
+        form.addView(help)
+        val scroll = ScrollView(this).apply { addView(form) }
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.demo_settings_title)
+            .setView(scroll)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(R.string.run_simulation) { _, _ ->
+                val temperatures = listOf(pit, pitTarget, probe1, probe1Target, probe2, probe2Target)
+                    .map {
+                        it.text.toString().trim()
+                            .replace(DecimalFormatSymbols.getInstance().decimalSeparator, '.')
+                            .toDoubleOrNull()
+                    }
+                if (temperatures.any { it == null }) {
+                    Toast.makeText(this, R.string.demo_invalid_temperature, Toast.LENGTH_LONG).show()
+                    return@setPositiveButton
+                }
+                val values = temperatures.filterNotNull()
+                try {
+                    startDemo(
+                        DemoScenario(
+                            pitC = values[0],
+                            pitTargetC = values[1],
+                            probe1C = values[2],
+                            probe1TargetC = values[3],
+                            probe2C = values[4],
+                            probe2TargetC = values[5],
+                            probe1Disconnected = disconnected1.isChecked,
+                            probe2Disconnected = disconnected2.isChecked,
+                            alarmActive = alarm.isChecked,
+                        ),
+                        connectionFailure = connectionFailure.isChecked,
+                    )
+                } catch (_: IllegalArgumentException) {
+                    Toast.makeText(this, R.string.demo_invalid_temperature, Toast.LENGTH_LONG).show()
+                }
+            }
+            .show()
+    }
+
+    private fun loadDemoFixture(): TelemetryReading? = try {
+        val row = assets.open("status.csv").bufferedReader().useLines { lines ->
+            lines.drop(1).first { it.startsWith("akorn_auto_tcp,") }
+        }
+        val columns = row.split(',')
+        AkornProtocol.decodeTcp(AkornProtocol.fromHex(columns[3]), columns[2].toInt())
+    } catch (_: Exception) {
+        null
+    }
+
+    private fun startDemo(scenario: DemoScenario? = null, connectionFailure: Boolean = false) {
         stopTransportOnly()
         temperatureHistory.clear()
         activeSource = "demo"
         store.connecting("demo", demo = true)
-        demoReading = try {
-            val row = assets.open("status.csv").bufferedReader().useLines { lines ->
-                lines.drop(1).first { it.startsWith("akorn_auto_tcp,") }
-            }
-            val columns = row.split(',')
-            AkornProtocol.decodeTcp(AkornProtocol.fromHex(columns[3]), columns[2].toInt())
-        } catch (_: Exception) {
+        val fixture = loadDemoFixture()
+        if (fixture == null) {
             store.invalidate()
-            showDetail("The bundled demo fixture could not be read.")
+            showDetail(getString(R.string.demo_fixture_unavailable))
+            render()
+            return
+        }
+        demoReading = scenario?.applyTo(fixture) ?: fixture
+        if (connectionFailure) {
+            demoReading = null
+            store.disconnect("demo", demo = true)
+            showDetail(getString(R.string.demo_connection_failed))
             render()
             return
         }

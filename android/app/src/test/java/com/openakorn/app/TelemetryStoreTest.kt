@@ -34,4 +34,20 @@ class TelemetryStoreTest {
         assertEquals(true, snapshot.demo)
         assertEquals(LinkState.LIVE, snapshot.state)
     }
+
+    @Test
+    fun startingANewConnectionClearsAgeFromThePreviousSource() {
+        val store = TelemetryStore()
+        val reading = AkornProtocol.decodeTcp(
+            AkornProtocol.fromHex("006900e110000045006003e81000100010321100"),
+        )
+        store.publish(reading, "tcp", demo = false, nowMillis = 1_000)
+
+        store.connecting("demo", demo = true)
+
+        val snapshot = store.snapshot(20_000)
+        assertEquals(LinkState.CONNECTING, snapshot.state)
+        assertNull(snapshot.ageSeconds)
+        assertNull(snapshot.reading)
+    }
 }

@@ -46,6 +46,13 @@
         </LinearLayout>
 
         <Button
+            android:id="@+id/demoSettingsButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="10dp"
+            android:text="@string/configure_demo" />
+
+        <Button
             android:id="@+id/savedGrillsButton"
             android:layout_width="match_parent"
             android:layout_height="48dp"
