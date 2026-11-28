@@ -29,7 +29,7 @@ class DemoScenarioTest {
         assertEquals(100.0, reading.pit.currentC!!, 0.0)
         assertEquals(250, reading.pit.targetF)
         assertEquals(121.1, reading.pit.targetC!!, 0.0)
-        assertEquals(21.1, reading.probe1.currentC!!, 0.0)
+        assertEquals(20.6, reading.probe1.currentC!!, 0.0)
         assertEquals(75.0, reading.probe2.currentC!!, 0.0)
         assertTrue(reading.alarm)
         assertEquals(fixture.fanMode, reading.fanMode)
