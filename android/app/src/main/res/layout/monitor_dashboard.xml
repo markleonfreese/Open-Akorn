@@ -10,6 +10,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:accessibilityHeading="true"
             android:text="@string/app_name"
             android:textColor="@color/akorn_ink"
             android:textSize="30sp"
@@ -47,6 +48,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="0dp"
+                android:accessibilityHeading="true"
                 android:text="@string/grill_temperature"
                 android:textColor="@android:color/white"
                 android:textSize="16sp" />
@@ -87,7 +89,7 @@
                 android:background="@drawable/akorn_card_background"
                 android:padding="12dp"
                 android:orientation="vertical">
-                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/meat_probe_1" android:textColor="@color/akorn_muted" android:textSize="15sp" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:accessibilityHeading="true" android:text="@string/meat_probe_1" android:textColor="@color/akorn_muted" android:textSize="15sp" />
                 <TextView android:id="@+id/probe1Current" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/temperature_unavailable" android:textColor="@color/akorn_ink" android:textSize="30sp" android:textStyle="bold" />
                 <TextView android:id="@+id/probe1Target" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="@string/target_unavailable" android:textColor="@color/akorn_muted" android:textSize="14sp" />
             </LinearLayout>
@@ -99,7 +101,7 @@
                 android:background="@drawable/akorn_card_background"
                 android:padding="12dp"
                 android:orientation="vertical">
-                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/meat_probe_2" android:textColor="@color/akorn_muted" android:textSize="15sp" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:accessibilityHeading="true" android:text="@string/meat_probe_2" android:textColor="@color/akorn_muted" android:textSize="15sp" />
                 <TextView android:id="@+id/probe2Current" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/temperature_unavailable" android:textColor="@color/akorn_ink" android:textSize="30sp" android:textStyle="bold" />
                 <TextView android:id="@+id/probe2Target" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="@string/target_unavailable" android:textColor="@color/akorn_muted" android:textSize="14sp" />
             </LinearLayout>

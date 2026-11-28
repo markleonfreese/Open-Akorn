@@ -116,6 +116,26 @@ class AndroidLayoutContractTests(unittest.TestCase):
             with self.subTest(view=name):
                 self.assertEqual(ids[name].attrib[ANDROID + 'accessibilityLiveRegion'], 'polite')
 
+    def test_primary_dashboard_and_connection_sections_are_accessible_headings(self):
+        expected = {
+            'monitor_dashboard': {
+                '@string/app_name', '@string/grill_temperature',
+                '@string/meat_probe_1', '@string/meat_probe_2',
+            },
+            'connection_setup': {
+                '@string/connect_your_grill', '@string/connect_by_wifi',
+                '@string/connect_by_bluetooth',
+            },
+        }
+        for panel_name, labels in expected.items():
+            with self.subTest(panel=panel_name):
+                headings = {
+                    node.attrib[ANDROID + 'text']
+                    for node in self.panels[panel_name].iter()
+                    if node.attrib.get(ANDROID + 'accessibilityHeading') == 'true'
+                }
+                self.assertTrue(labels.issubset(headings), f'missing headings: {labels - headings}')
+
     def test_layout_strings_exist_and_primary_text_colors_meet_contrast_target(self):
         for panel in self.panels.values():
             self.assertLessEqual(referenced_names(panel, 'text', '@string/'), self.string_names)
