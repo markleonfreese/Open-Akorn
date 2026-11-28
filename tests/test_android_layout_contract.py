@@ -148,6 +148,15 @@ class AndroidLayoutContractTests(unittest.TestCase):
         self.assertIn('white-space: nowrap;', rules)
         self.assertRegex(css, r'\.install-button\s*\{[^}]*min-height:\s*48px')
 
+    def test_pwa_landscape_tablet_uses_two_column_dashboard(self):
+        css = (ROOT / 'pwa' / 'styles.css').read_text()
+        self.assertIn('@media (min-width: 900px) and (orientation: landscape)', css)
+        self.assertIn('grid-template-columns: minmax(0, 1.2fr) minmax(360px, .8fr);', css)
+        self.assertIn('.pit-panel { grid-column: 1; margin-top: 0; }', css)
+        self.assertIn('.probe-grid { grid-column: 2; margin-top: 0; }', css)
+        self.assertIn('.reported-status { grid-column: 1; margin-top: 0; }', css)
+        self.assertIn('.safety-note { grid-column: 2;', css)
+
 
 if __name__ == '__main__':
     unittest.main()

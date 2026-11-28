@@ -87,6 +87,26 @@ footer { padding: 17px 5px 5px; color: var(--muted); font-size: 11px; text-align
   .reported-status { padding: 17px 21px; }
 }
 
+@media (min-width: 900px) and (orientation: landscape) {
+  body { padding-left: 32px; padding-right: 32px; }
+  .shell {
+    width: min(100%, 1120px);
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(360px, .8fr);
+    column-gap: 14px;
+    row-gap: 12px;
+    align-content: start;
+  }
+  .topbar { grid-column: 1 / -1; margin: 4px 0 8px; }
+  .connection, .demo-banner, footer { grid-column: 1 / -1; }
+  .demo-banner { margin-top: 0; }
+  .pit-panel { grid-column: 1; margin-top: 0; }
+  .probe-grid { grid-column: 2; margin-top: 0; }
+  .reported-status { grid-column: 1; margin-top: 0; }
+  .safety-note { grid-column: 2; margin-top: 0; align-self: stretch; display: flex; flex-direction: column; justify-content: center; }
+  footer { padding-top: 5px; }
+}
+
 @media (max-width: 370px) {
   .topbar { gap: 10px; }
   .brand { gap: 8px; }
