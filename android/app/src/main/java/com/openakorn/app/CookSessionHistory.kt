@@ -116,9 +116,9 @@ class CookSessionHistory(
                 session.samples.forEach { sample ->
                     append("\nsample|").append(sample.elapsedMillis)
                     listOf(
-                        sample.pit.currentC, sample.pit.targetC,
-                        sample.probe1.currentC, sample.probe1.targetC,
-                        sample.probe2.currentC, sample.probe2.targetC,
+                        sample.pit?.currentC, sample.pit?.targetC,
+                        sample.probe1?.currentC, sample.probe1?.targetC,
+                        sample.probe2?.currentC, sample.probe2?.targetC,
                     ).forEach { append('|').append(it.encodeNumber()) }
                 }
             }
